@@ -104,15 +104,9 @@ def upgrade_servers(name: Optional[str] = typer.Argument(None, help="Server name
                     timeout=30,
                 )
             elif cmd == "npx":
-                # npm cache clean + npx @package@latest
+                # npm cache clean (latest version will be downloaded on next use)
                 subprocess.run(
                     ["npm", "cache", "clean", "--force"],
-                    capture_output=True,
-                    timeout=30,
-                )
-                # npx @package@latest --help
-                subprocess.run(
-                    ["npx", *args, "--help"],
                     capture_output=True,
                     timeout=30,
                 )
