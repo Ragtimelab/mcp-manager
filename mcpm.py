@@ -133,15 +133,38 @@ def health_check(name: Optional[str] = typer.Argument(None, help="Server name"))
     console.print("Checking MCP servers...")
 
     for sname, server in servers.items():
-        cmd = [server["command"], *server["args"], "--help"]
+        cmd = server["command"]
+        args = server["args"]
+
         try:
-            result = subprocess.run(cmd, capture_output=True, timeout=10)
-            if result.returncode == 0:
-                console.print(f"[green]✓[/] {sname}: OK")
-            else:
-                console.print(
-                    f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})"
+            if cmd == "uvx":
+                # uvx uses cache, safe to execute
+                result = subprocess.run(
+                    [cmd, *args, "--help"], capture_output=True, timeout=30
                 )
+                if result.returncode == 0:
+                    console.print(f"[green]✓[/] {sname}: OK")
+                else:
+                    console.print(
+                        f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})"
+                    )
+            elif cmd == "npx":
+                # npx may download packages, only check command availability
+                if shutil.which(cmd):
+                    console.print(f"[green]✓[/] {sname}: OK (npx available)")
+                else:
+                    console.print(f"[red]✗[/] {sname}: npx not found in PATH")
+            else:
+                # Other commands: try to execute
+                result = subprocess.run(
+                    [cmd, *args, "--help"], capture_output=True, timeout=30
+                )
+                if result.returncode == 0:
+                    console.print(f"[green]✓[/] {sname}: OK")
+                else:
+                    console.print(
+                        f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})"
+                    )
         except Exception as e:
             console.print(f"[red]✗[/] {sname}: ERROR ({e})")
 
