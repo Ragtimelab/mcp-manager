@@ -118,7 +118,7 @@ def upgrade_servers(name: Optional[str] = typer.Argument(None, help="Server name
     console.print("[green]✅ Done![/]")
 
 
-@app.command("health", help="Check server health")
+@app.command("health", help="Check MCP server health")
 def health_check(name: Optional[str] = typer.Argument(None, help="Server name")):
     """Check health of MCP servers"""
     config = load_config()
@@ -146,7 +146,7 @@ def health_check(name: Optional[str] = typer.Argument(None, help="Server name"))
             console.print(f"[red]✗[/] {sname}: ERROR ({e})")
 
 
-@app.command("show", help="Show server details")
+@app.command("show", help="Show MCP server details")
 def show_server(name: str = typer.Argument(..., help="Server name")):
     """Show detailed info for a server"""
     config = load_config()
@@ -164,7 +164,7 @@ def show_server(name: str = typer.Argument(..., help="Server name")):
     console.print(f"└─ Env: {server.get('env', {})}\n")
 
 
-@app.command("backup", help="Backup configuration")
+@app.command("backup", help="Backup/restore config")
 def backup_config(
     list_backups: bool = typer.Option(False, "-l", "--list", help="List backups"),
     restore: Optional[str] = typer.Option(
@@ -222,7 +222,7 @@ def backup_config(
     console.print(f"[green]✅ Backup created:[/] {backup_file}")
 
 
-@app.command("doctor", help="Diagnose MCP configuration issues")
+@app.command("doctor", help="Diagnose config issues")
 def doctor():
     """Diagnose MCP configuration and suggest fixes"""
     console.print("[bold]Diagnosing MCP configuration...[/]\n")
