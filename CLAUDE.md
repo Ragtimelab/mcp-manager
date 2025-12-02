@@ -38,12 +38,15 @@ uv run mypy mcpm.py
 # Install globally as tool
 uv tool install .
 
-# Reinstall after changes
-uv tool install --force .
+# Reinstall after code changes (IMPORTANT: use --reinstall, not --force)
+uv tool install --reinstall .
 
 # Uninstall
 uv tool uninstall mcp-manager
 ```
+
+**Important**: When updating local packages (`.`), use `--reinstall` to force rebuild from source.
+`--force` only reinstalls dependencies but may use cached build artifacts.
 
 ## Key Architecture Decisions
 
@@ -60,9 +63,10 @@ uv tool uninstall mcp-manager
 ### MCP Server Types
 The tool handles two types of MCP servers:
 - **uvx-based**: Python packages (e.g., `mcp-server-time`)
-  - Upgrade: `uvx --refresh <package>`
+  - Upgrade: `uvx --refresh <package> --help` (verifies installation)
 - **npx-based**: Node.js packages (e.g., `@upstash/context7-mcp`)
-  - Upgrade: `npm cache clean --force && npx <package>`
+  - Upgrade: `npm cache clean --force` only (no pre-download)
+  - Rationale: npx downloads on actual use; pre-verification causes timeouts for large packages
 
 ### Command Structure
 ```
@@ -71,9 +75,10 @@ mcpm
 ├── upgrade (alias: up)   # Upgrade all or specific server
 ├── health               # Check server executability
 ├── show                 # Display server config details
-└── backup               # Create/list/restore backups
-    ├── -l, --list       # List backups
-    └── -r, --restore    # Restore from backup
+├── backup               # Create/list/restore backups
+│   ├── -l, --list       # List backups
+│   └── -r, --restore    # Restore from backup
+└── doctor               # Diagnose MCP configuration issues
 ```
 
 ## Important Constraints
@@ -115,7 +120,13 @@ packages = ["mcpm.py"]  # Must explicitly list the single file
 When making changes, verify:
 1. `uv run ruff check mcpm.py` passes
 2. `uv run mypy mcpm.py` passes
-3. `uv run python mcpm.py list` works
-4. `uv tool install --force .` succeeds
-5. `mcpm --help` displays correctly
-6. All 6 commands functional (list, upgrade, health, show, backup)
+3. `uv run python mcpm.py list` works (local test)
+4. `uv tool install --reinstall .` succeeds (rebuild from source)
+5. `mcpm --help` displays correctly (installed version)
+6. All 7 commands functional:
+   - `mcpm list` / `mcpm ls`
+   - `mcpm upgrade` / `mcpm up`
+   - `mcpm health`
+   - `mcpm show <server>`
+   - `mcpm backup` / `mcpm backup -l` / `mcpm backup -r <id>`
+   - `mcpm doctor` (diagnostics)
