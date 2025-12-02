@@ -67,7 +67,7 @@ class ConfigManager:
             ConfigCorruptedError: If config is invalid
         """
         try:
-            data = self.config_path.read_text()
+            data = self.config_path.read_text(encoding="utf-8")
         except FileNotFoundError as e:
             raise ConfigNotFoundError(
                 f"Configuration file not found: {self.config_path}",

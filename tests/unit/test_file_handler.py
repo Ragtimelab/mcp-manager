@@ -1,6 +1,7 @@
 """Unit tests for file_handler module."""
 
 import os
+import sys
 from pathlib import Path
 
 import portalocker
@@ -21,7 +22,7 @@ class TestAtomicWrite:
         atomic_write(target, content)
 
         assert target.exists()
-        assert target.read_text() == content
+        assert target.read_text(encoding="utf-8") == content
 
     def test_overwrite_existing_file(self, tmp_path):
         """Should overwrite existing file atomically."""
@@ -31,7 +32,7 @@ class TestAtomicWrite:
         new_content = "New content"
         atomic_write(target, new_content)
 
-        assert target.read_text() == new_content
+        assert target.read_text(encoding="utf-8") == new_content
 
     def test_no_temp_file_after_success(self, tmp_path):
         """Should cleanup temp file after successful write."""
@@ -70,7 +71,7 @@ class TestAtomicWrite:
 
         atomic_write(target, content)
 
-        assert target.read_text() == content
+        assert target.read_text(encoding="utf-8") == content
 
     def test_write_empty_file(self, tmp_path):
         """Should handle empty content."""
@@ -78,7 +79,7 @@ class TestAtomicWrite:
         atomic_write(target, "")
 
         assert target.exists()
-        assert target.read_text() == ""
+        assert target.read_text(encoding="utf-8") == ""
 
     def test_write_large_content(self, tmp_path):
         """Should handle large content."""
@@ -87,7 +88,7 @@ class TestAtomicWrite:
 
         atomic_write(target, content)
 
-        assert target.read_text() == content
+        assert target.read_text(encoding="utf-8") == content
 
     def test_write_multiline_content(self, tmp_path):
         """Should preserve multiline content."""
@@ -96,7 +97,7 @@ class TestAtomicWrite:
 
         atomic_write(target, content)
 
-        assert target.read_text() == content
+        assert target.read_text(encoding="utf-8") == content
 
     def test_fsync_called(self, tmp_path, monkeypatch):
         """Should call fsync for durability."""
@@ -126,7 +127,7 @@ class TestAtomicWrite:
         atomic_write(target, "new content")
 
         assert target.exists()
-        assert target.read_text() == "new content"
+        assert target.read_text(encoding="utf-8") == "new content"
 
 
 class TestFileLock:
@@ -243,6 +244,10 @@ class TestFileLockFunction:
 class TestIntegration:
     """Test integration scenarios."""
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="Windows cannot replace a file with an open handle (file lock conflict)",
+    )
     def test_atomic_write_with_lock(self, tmp_path):
         """Should be able to combine atomic write with locking."""
         target = tmp_path / "test.txt"
@@ -252,7 +257,7 @@ class TestIntegration:
         with file_lock(target, exclusive=True):
             atomic_write(target, "locked content")
 
-        assert target.read_text() == "locked content"
+        assert target.read_text(encoding="utf-8") == "locked content"
 
     def test_concurrent_write_protection(self, tmp_path):
         """Locks should prevent concurrent writes."""
@@ -278,20 +283,20 @@ class TestIntegration:
 
         atomic_write(target, content)
 
-        assert target.read_text() == content
+        assert target.read_text(encoding="utf-8") == content
 
     def test_multiple_writes(self, tmp_path):
         """Should handle multiple writes to same file."""
         target = tmp_path / "test.txt"
 
         atomic_write(target, "Version 1")
-        assert target.read_text() == "Version 1"
+        assert target.read_text(encoding="utf-8") == "Version 1"
 
         atomic_write(target, "Version 2")
-        assert target.read_text() == "Version 2"
+        assert target.read_text(encoding="utf-8") == "Version 2"
 
         atomic_write(target, "Version 3")
-        assert target.read_text() == "Version 3"
+        assert target.read_text(encoding="utf-8") == "Version 3"
 
 
 class TestEdgeCases:
@@ -305,7 +310,7 @@ class TestEdgeCases:
 
         atomic_write(target, "nested content")
 
-        assert target.read_text() == "nested content"
+        assert target.read_text(encoding="utf-8") == "nested content"
 
     def test_write_preserves_content_on_disk(self, tmp_path):
         """Should ensure content is on disk (fsync)."""
@@ -341,7 +346,7 @@ class TestEdgeCases:
         target = tmp_path / "test-file_123.txt"
         atomic_write(target, "content")
 
-        assert target.read_text() == "content"
+        assert target.read_text(encoding="utf-8") == "content"
 
     def test_write_permission_error(self, tmp_path, monkeypatch):
         """Should raise FileIOError on permission denied."""

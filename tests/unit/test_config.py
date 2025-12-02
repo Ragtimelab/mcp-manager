@@ -124,7 +124,7 @@ class TestConfigManagerLoad:
         config_path = tmp_path / "config.json"
         config_path.write_text(json.dumps({"mcpServers": {}}))
 
-        def mock_read_text(self):
+        def mock_read_text(self, **kwargs):
             raise PermissionError("Permission denied")
 
         monkeypatch.setattr(Path, "read_text", mock_read_text)
@@ -147,7 +147,7 @@ class TestConfigManagerSave:
         manager.save(config)
 
         assert config_path.exists()
-        data = json.loads(config_path.read_text())
+        data = json.loads(config_path.read_text(encoding="utf-8"))
         assert "mcpServers" in data
 
     def test_save_with_servers(self, tmp_path):
@@ -159,7 +159,7 @@ class TestConfigManagerSave:
         config = Config(mcpServers={"time": server})
         manager.save(config)
 
-        data = json.loads(config_path.read_text())
+        data = json.loads(config_path.read_text(encoding="utf-8"))
         assert "time" in data["mcpServers"]
         assert data["mcpServers"]["time"]["command"] == "uvx"
 
@@ -172,7 +172,7 @@ class TestConfigManagerSave:
         new_config = Config(mcpServers={})
         manager.save(new_config)
 
-        data = json.loads(config_path.read_text())
+        data = json.loads(config_path.read_text(encoding="utf-8"))
         assert "old" not in data["mcpServers"]
 
     def test_save_cached_config(self, tmp_path):
@@ -189,7 +189,7 @@ class TestConfigManagerSave:
         # Save without argument
         manager.save()
 
-        data = json.loads(config_path.read_text())
+        data = json.loads(config_path.read_text(encoding="utf-8"))
         assert "new" in data["mcpServers"]
 
     def test_save_without_config_raises(self, tmp_path):
@@ -209,7 +209,7 @@ class TestConfigManagerSave:
         config = Config(mcpServers={"test": server})
         manager.save(config)
 
-        data = json.loads(config_path.read_text())
+        data = json.loads(config_path.read_text(encoding="utf-8"))
         assert data["mcpServers"]["test"]["env"]["NAME"] == "테스트"
 
 
@@ -465,5 +465,5 @@ class TestConfigManagerIntegration:
         manager.add_server("test", server)
 
         # Reload and check unknown fields are preserved
-        data = json.loads(config_path.read_text())
+        data = json.loads(config_path.read_text(encoding="utf-8"))
         assert "unknownField" in data or hasattr(manager._config, "unknownField")

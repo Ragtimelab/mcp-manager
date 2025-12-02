@@ -73,7 +73,7 @@ class BackupManager:
 
         for backup_file in self.backup_dir.glob("*.json"):
             try:
-                data = json.loads(backup_file.read_text())
+                data = json.loads(backup_file.read_text(encoding="utf-8"))
                 backup = Backup.model_validate(data)
                 backups.append(backup)
             except (json.JSONDecodeError, PydanticValidationError):
@@ -108,7 +108,7 @@ class BackupManager:
             )
 
         try:
-            data = json.loads(backup_path.read_text())
+            data = json.loads(backup_path.read_text(encoding="utf-8"))
             backup = Backup.model_validate(data)
             return backup.config
         except json.JSONDecodeError as e:
