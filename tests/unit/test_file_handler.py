@@ -1,9 +1,9 @@
 """Unit tests for file_handler module."""
 
-import fcntl
 import os
 from pathlib import Path
 
+import portalocker
 import pytest
 
 from mcp_manager.exceptions import FileIOError
@@ -185,13 +185,13 @@ class TestFileLock:
             # Try to acquire another exclusive lock (should block)
             # We can't easily test blocking, but we can test non-blocking flag
             try:
-                fd = os.open(lockfile, os.O_RDWR)
+                fh = open(lockfile, "r+b")
                 # Try non-blocking lock
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                portalocker.lock(fh, portalocker.LOCK_EX | portalocker.LOCK_NB)
                 # If we got here, lock wasn't held (test failure)
-                os.close(fd)
+                fh.close()
                 assert False, "Should have blocked"
-            except BlockingIOError:
+            except portalocker.LockException:
                 # Expected - lock was held
                 pass
 
@@ -202,10 +202,10 @@ class TestFileLock:
 
         with FileLock(lockfile, exclusive=False):
             # Try to acquire another shared lock
-            fd = os.open(lockfile, os.O_RDONLY)
-            fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            fcntl.flock(fd, fcntl.LOCK_UN)
-            os.close(fd)
+            fh = open(lockfile, "rb")
+            portalocker.lock(fh, portalocker.LOCK_SH | portalocker.LOCK_NB)
+            portalocker.unlock(fh)
+            fh.close()
             # Should succeed
 
     def test_lock_nonexistent_file_fails(self, tmp_path):
@@ -262,12 +262,12 @@ class TestIntegration:
         # Hold exclusive lock
         with file_lock(target, exclusive=True):
             # Verify another process can't acquire lock
-            fd = os.open(target, os.O_RDWR)
+            fh = open(target, "r+b")
             try:
-                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                os.close(fd)
+                portalocker.lock(fh, portalocker.LOCK_EX | portalocker.LOCK_NB)
+                fh.close()
                 assert False, "Should not acquire lock"
-            except BlockingIOError:
+            except portalocker.LockException:
                 # Expected
                 pass
 
