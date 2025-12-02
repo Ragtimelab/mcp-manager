@@ -44,6 +44,16 @@ def get_servers(config: dict) -> dict:
     return config.get("mcpServers", {})
 
 
+def create_backup(config: dict) -> Path:
+    """Create timestamped backup of config"""
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    backup_file = BACKUP_DIR / f"{timestamp}.json"
+    with open(backup_file, "w") as f:
+        json.dump(config, f, indent=2)
+    return backup_file
+
+
 @app.command("list", help="List all MCP servers")
 @app.command("ls", hidden=True)
 def list_servers(
@@ -288,11 +298,7 @@ def install_server(
         raise typer.Exit(1)
 
     # Create backup
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    backup_file = BACKUP_DIR / f"{timestamp}.json"
-    with open(backup_file, "w") as f:
-        json.dump(config, f, indent=2)
+    create_backup(config)
 
     # Add server
     servers[server_name] = {"type": "stdio", "command": cmd, "args": args}
@@ -330,11 +336,7 @@ def uninstall_server(
             raise typer.Exit(0)
 
     # Create backup
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    backup_file = BACKUP_DIR / f"{timestamp}.json"
-    with open(backup_file, "w") as f:
-        json.dump(config, f, indent=2)
+    create_backup(config)
 
     # Remove server
     del servers[name]
@@ -360,11 +362,7 @@ def disable_server(name: str = typer.Argument(..., help="Server name")):
         raise typer.Exit(1)
 
     # Create backup
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    backup_file = BACKUP_DIR / f"{timestamp}.json"
-    with open(backup_file, "w") as f:
-        json.dump(config, f, indent=2)
+    create_backup(config)
 
     # Move to disabled
     disabled[name] = servers[name]
@@ -392,11 +390,7 @@ def enable_server(name: str = typer.Argument(..., help="Server name")):
         raise typer.Exit(1)
 
     # Create backup
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    backup_file = BACKUP_DIR / f"{timestamp}.json"
-    with open(backup_file, "w") as f:
-        json.dump(config, f, indent=2)
+    create_backup(config)
 
     # Move to active
     servers[name] = disabled[name]
