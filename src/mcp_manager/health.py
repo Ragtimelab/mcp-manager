@@ -70,7 +70,7 @@ class HealthChecker:
                 check=False,
             )
             return HealthStatus.HEALTHY
-        except (subprocess.TimeoutExpired, FileNotFoundError):
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
             return HealthStatus.UNHEALTHY
 
     def check_http_server(self, server: MCPServer) -> HealthStatus:
@@ -82,5 +82,26 @@ class HealthChecker:
         Returns:
             Health status
         """
-        # TODO: Implement HTTP connection test
-        return HealthStatus.UNKNOWN
+        import urllib.request
+        from urllib.error import HTTPError, URLError
+
+        if not server.url:
+            return HealthStatus.UNHEALTHY
+
+        try:
+            # Create request with headers if provided
+            req = urllib.request.Request(server.url)
+            if server.headers:
+                for key, value in server.headers.items():
+                    req.add_header(key, value)
+
+            # Try to open URL with timeout
+            with urllib.request.urlopen(req, timeout=self.timeout) as response:
+                # Check if status code is success (2xx or 3xx)
+                if 200 <= response.status < 400:
+                    return HealthStatus.HEALTHY
+                else:
+                    return HealthStatus.UNHEALTHY
+
+        except (HTTPError, URLError, TimeoutError, OSError):
+            return HealthStatus.UNHEALTHY

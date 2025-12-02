@@ -87,12 +87,11 @@ mcpm add custom \
   --env DB_URL=localhost:5432 \
   --env NODE_ENV=production
 
-# Remove server
+# Remove server (with confirmation)
 mcpm remove time
 
-# Enable/disable server
-mcpm disable time
-mcpm enable time
+# Remove without confirmation
+mcpm remove time --force
 ```
 
 ### Backup & Restore
@@ -120,14 +119,20 @@ mcpm backup clean --keep 5
 # List available templates
 mcpm templates list
 
+# Show template details
+mcpm templates show time
+
 # Install template
 mcpm templates install time
 
 # Install with custom name
 mcpm templates install time --name my-time-server
+
+# Install to project scope
+mcpm templates install github --scope project
 ```
 
-### Health & Validation
+### Health Checks
 
 ```bash
 # Check all servers
@@ -136,27 +141,8 @@ mcpm health
 # Check specific server
 mcpm health time
 
-# Validate configuration
-mcpm validate
-
-# Validate and fix issues
-mcpm validate --fix
-
-# Diagnose problems
-mcpm doctor
-```
-
-### Import & Export
-
-```bash
-# Export server configuration
-mcpm export time --output time-server.json
-
-# Import server configuration
-mcpm import time-server.json
-
-# Import to project scope
-mcpm import shared.json --scope project
+# Check servers in project scope
+mcpm health --scope project
 ```
 
 ## Configuration
@@ -167,18 +153,33 @@ MCP Manager works with Claude Code's configuration:
 - **Project scope**: `.mcp.json` (team-shared, version control)
 - **Local scope**: `.claude/settings.json` (personal, single project)
 
-## Documentation
+## Available Commands
 
-Detailed design documentation is available in the `docs/` directory:
+```bash
+# Server Management
+mcpm list [--scope SCOPE] [--type TYPE] [--format FORMAT]
+mcpm show NAME [--scope SCOPE] [--verbose]
+mcpm add NAME [--type TYPE] [--command CMD] [--args ARGS...] [--env KEY=VALUE...] [--interactive]
+mcpm remove NAME [--scope SCOPE] [--force]
 
-1. [Architecture](docs/01-architecture.md) - System design and components
-2. [Data Models](docs/02-data-models.md) - Data structures and validation
-3. [API Reference](docs/03-api-reference.md) - Complete CLI command reference
-4. [Module Design](docs/04-module-design.md) - Code structure and organization
-5. [Error Handling](docs/05-error-handling.md) - Exception handling strategies
-6. [Security](docs/06-security.md) - Security measures and threat mitigation
-7. [Testing](docs/07-testing.md) - Testing strategy and coverage
-8. [Deployment](docs/08-deployment.md) - Packaging and distribution
+# Backup & Restore
+mcpm backup create [--name NAME]
+mcpm backup list [--limit N]
+mcpm backup restore BACKUP_ID [--scope SCOPE] [--force]
+mcpm backup clean [--keep N] [--force]
+
+# Templates
+mcpm templates list
+mcpm templates show NAME
+mcpm templates install NAME [--name CUSTOM_NAME] [--scope SCOPE]
+
+# Health Check
+mcpm health [NAME] [--scope SCOPE]
+
+# Help
+mcpm --help
+mcpm COMMAND --help
+```
 
 ## Development
 

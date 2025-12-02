@@ -1,0 +1,13 @@
+{
+  "name": "filesystem",
+  "description": "MCP server for secure filesystem operations",
+  "author": "Model Context Protocol",
+  "category": "system",
+  "server": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/directory"],
+    "env": {}
+  },
+  "notes": "Replace /path/to/allowed/directory with actual path. Provides read/write access to specified directory."
+}

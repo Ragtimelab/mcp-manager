@@ -1,0 +1,15 @@
+{
+  "name": "github",
+  "description": "MCP server for GitHub API integration",
+  "author": "Model Context Protocol",
+  "category": "development",
+  "server": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-github"],
+    "env": {
+      "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+    }
+  },
+  "notes": "Requires GITHUB_TOKEN environment variable. Provides access to GitHub repositories, issues, and PRs."
+}

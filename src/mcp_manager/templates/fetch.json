@@ -1,0 +1,12 @@
+{
+  "name": "fetch",
+  "description": "MCP server for fetching web content",
+  "author": "Model Context Protocol",
+  "category": "web",
+  "server": {
+    "type": "stdio",
+    "command": "uvx",
+    "args": ["mcp-server-fetch"],
+    "env": {}
+  }
+}

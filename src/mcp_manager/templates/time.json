@@ -1,0 +1,12 @@
+{
+  "name": "time",
+  "description": "MCP server for time and timezone operations",
+  "author": "Model Context Protocol",
+  "category": "utility",
+  "server": {
+    "type": "stdio",
+    "command": "uvx",
+    "args": ["mcp-server-time"],
+    "env": {}
+  }
+}
