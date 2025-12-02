@@ -44,75 +44,83 @@
 
 ---
 
-## Phase 2: Data Layer
+## Phase 2: Data Layer ✅ COMPLETED
 
-### 2.1 Data Models (`models.py`)
-- [ ] Import Pydantic v2 (`from pydantic import BaseModel, Field`)
-- [ ] Define `MCPServerType(str, Enum)`
-  - [ ] `STDIO = "stdio"`
-  - [ ] `SSE = "sse"`
-  - [ ] `HTTP = "http"`
-- [ ] Define `Scope(str, Enum)`
-  - [ ] `USER = "user"`
-  - [ ] `PROJECT = "project"`
-  - [ ] `LOCAL = "local"`
-- [ ] Define `MCPServer(BaseModel)`
-  - [ ] Field: `type: MCPServerType`
-  - [ ] Field: `command: Optional[str] = None`
-  - [ ] Field: `args: list[str] = Field(default_factory=list)`
-  - [ ] Field: `env: dict[str, str] = Field(default_factory=dict)`
-  - [ ] Field: `url: Optional[str] = None`
-  - [ ] Field: `headers: dict[str, str] = Field(default_factory=dict)`
-  - [ ] Add field validator for `command` (stdio requires it)
-  - [ ] Add field validator for `url` (http/sse requires it)
-  - [ ] Add `model_config = ConfigDict(use_enum_values=True)`
-- [ ] Define `Config(BaseModel)`
-  - [ ] Field: `mcpServers: dict[str, MCPServer] = Field(default_factory=dict)`
-  - [ ] Add `model_config = ConfigDict(extra="allow")` (preserve unknown fields)
-- [ ] Define `Backup(BaseModel)`
-  - [ ] Field: `timestamp: datetime = Field(default_factory=datetime.now)`
-  - [ ] Field: `config: Config`
-  - [ ] Field: `metadata: dict[str, str] = Field(default_factory=dict)`
-  - [ ] Property: `backup_id` (returns formatted timestamp)
+### 2.1 Data Models (`models.py`) ✅
+- [x] Import Pydantic v2 (`from pydantic import BaseModel, Field`)
+- [x] Define `MCPServerType(str, Enum)`
+  - [x] `STDIO = "stdio"`
+  - [x] `SSE = "sse"`
+  - [x] `HTTP = "http"`
+- [x] Define `Scope(str, Enum)`
+  - [x] `USER = "user"`
+  - [x] `PROJECT = "project"`
+  - [x] `LOCAL = "local"`
+- [x] Define `MCPServer(BaseModel)`
+  - [x] Field: `type: MCPServerType`
+  - [x] Field: `command: Optional[str] = None`
+  - [x] Field: `args: list[str] = Field(default_factory=list)`
+  - [x] Field: `env: dict[str, str] = Field(default_factory=dict)`
+  - [x] Field: `url: Optional[str] = None`
+  - [x] Field: `headers: dict[str, str] = Field(default_factory=dict)`
+  - [x] Add field validator for `command` (stdio requires it)
+  - [x] Add field validator for `url` (http/sse requires it)
+  - [x] Add `model_config = ConfigDict(use_enum_values=True)`
+- [x] Define `Config(BaseModel)`
+  - [x] Field: `mcpServers: dict[str, MCPServer] = Field(default_factory=dict)`
+  - [x] Add `model_config = ConfigDict(extra="allow")` (preserve unknown fields)
+- [x] Define `Backup(BaseModel)`
+  - [x] Field: `timestamp: datetime = Field(default_factory=datetime.now)`
+  - [x] Field: `config: Config`
+  - [x] Field: `metadata: dict[str, str] = Field(default_factory=dict)`
+  - [x] Property: `backup_id` (returns formatted timestamp)
 
-### 2.2 Validators Module (`validators.py`)
-- [ ] Import constants and exceptions
-- [ ] Function: `validate_server_name(name: str) -> bool`
-  - [ ] Check pattern `^[a-z][a-z0-9_-]{0,63}$`
-  - [ ] Reject reserved names ("system", "root", "admin")
-  - [ ] Raise `InvalidServerNameError` on failure
-- [ ] Function: `validate_command(command: str) -> bool`
-  - [ ] Check if in `ALLOWED_COMMANDS` whitelist
-  - [ ] If not, check with `shutil.which()`
-  - [ ] Raise `InvalidCommandError` if not found
-  - [ ] Log warning for non-whitelisted commands
-- [ ] Function: `validate_url(url: str) -> bool`
-  - [ ] Use Pydantic `HttpUrl` for validation
-  - [ ] Raise `InvalidURLError` on failure
-- [ ] Function: `validate_env_vars(env: dict[str, str]) -> bool`
-  - [ ] Warn if setting dangerous vars
-  - [ ] Check for shell metacharacters in values
-  - [ ] Return True or raise `SecurityError`
-- [ ] Function: `validate_server(server: MCPServer) -> bool`
-  - [ ] Cross-field validation
-  - [ ] Ensure stdio has command
-  - [ ] Ensure http/sse has url
-  - [ ] Call `validate_command` or `validate_url`
+### 2.2 Validators Module (`validators.py`) ✅
+- [x] Import constants and exceptions
+- [x] Function: `validate_server_name(name: str) -> bool`
+  - [x] Check pattern `^[a-z][a-z0-9_-]{0,63}$`
+  - [x] Reject reserved names ("system", "root", "admin")
+  - [x] Raise `InvalidServerNameError` on failure
+- [x] Function: `validate_command(command: str) -> bool`
+  - [x] Check if in `ALLOWED_COMMANDS` whitelist
+  - [x] If not, check with `shutil.which()`
+  - [x] Raise `InvalidCommandError` if not found
+  - [x] Log warning for non-whitelisted commands
+- [x] Function: `validate_url(url: str) -> bool`
+  - [x] Use Pydantic `HttpUrl` for validation
+  - [x] Raise `InvalidURLError` on failure
+- [x] Function: `validate_env_vars(env: dict[str, str]) -> bool`
+  - [x] Warn if setting dangerous vars
+  - [x] Check for shell metacharacters in values
+  - [x] Return True or raise `SecurityError`
+- [x] Function: `validate_server(server: MCPServer) -> bool`
+  - [x] Cross-field validation
+  - [x] Ensure stdio has command
+  - [x] Ensure http/sse has url
+  - [x] Call `validate_command` or `validate_url`
 
-### 2.3 File Handler Module (`file_handler.py`)
-- [ ] Import `fcntl`, `tempfile`, `os`
-- [ ] Function: `atomic_write(path: Path, content: str) -> None`
-  - [ ] Create temp file with `.tmp` suffix
-  - [ ] Write content to temp file
-  - [ ] Call `os.fsync()` for durability
-  - [ ] Atomic rename: `temp.rename(path)`
-  - [ ] Cleanup temp file on error
-  - [ ] Raise `FileIOError` on failure
-- [ ] Class: `FileLock` (context manager)
-  - [ ] `__init__(self, path: Path, exclusive: bool = True)`
-  - [ ] `__enter__`: Open file, acquire lock (`fcntl.flock`)
-  - [ ] `__exit__`: Release lock, close file
-- [ ] Function: `file_lock(path: Path, exclusive: bool = True) -> FileLock`
+### 2.3 File Handler Module (`file_handler.py`) ✅
+- [x] Import `fcntl`, `tempfile`, `os`
+- [x] Function: `atomic_write(path: Path, content: str) -> None`
+  - [x] Create temp file with `.tmp` suffix
+  - [x] Write content to temp file
+  - [x] Call `os.fsync()` for durability
+  - [x] Atomic rename: `temp.rename(path)`
+  - [x] Cleanup temp file on error
+  - [x] Raise `FileIOError` on failure
+- [x] Class: `FileLock` (context manager)
+  - [x] `__init__(self, path: Path, exclusive: bool = True)`
+  - [x] `__enter__`: Open file, acquire lock (`fcntl.flock`)
+  - [x] `__exit__`: Release lock, close file
+- [x] Function: `file_lock(path: Path, exclusive: bool = True) -> FileLock`
+
+### 2.4 Testing ✅
+- [x] Create `tests/unit/test_models.py` (35 tests)
+- [x] Create `tests/unit/test_validators.py` (39 tests)
+- [x] Create `tests/unit/test_file_handler.py` (34 tests)
+- [x] All 108 Phase 2 tests passing
+- [x] 100% coverage for models.py, validators.py
+- [x] 97% coverage for file_handler.py
 
 ---
 
