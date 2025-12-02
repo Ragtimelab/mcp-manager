@@ -55,9 +55,7 @@ class BackupManager:
 
         # Save to file
         backup_path = self._get_backup_path(backup.backup_id)
-        json_str = json.dumps(
-            backup.model_dump(mode="json"), indent=2, ensure_ascii=False
-        )
+        json_str = json.dumps(backup.model_dump(mode="json"), indent=2, ensure_ascii=False)
         atomic_write(backup_path, json_str + "\n")
 
         return backup
@@ -129,9 +127,7 @@ class BackupManager:
                 details={"backup_id": backup_id, "error": str(e)},
             ) from e
 
-    def cleanup(
-        self, keep: int = 5, older_than: Optional[str] = None
-    ) -> int:
+    def cleanup(self, keep: int = 5, older_than: Optional[str] = None) -> int:
         """Remove old backups.
 
         Args:

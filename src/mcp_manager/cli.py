@@ -3,7 +3,6 @@
 # TODO: Implement CLI commands using Typer and Rich
 # This is the main entry point for the CLI application
 
-
 import typer
 from rich.console import Console
 

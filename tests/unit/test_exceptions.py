@@ -242,9 +242,7 @@ class TestExceptionUseCases:
     def test_config_not_found_with_path(self):
         """ConfigNotFoundError should work with file path."""
         path = "/home/user/.claude.json"
-        exc = ConfigNotFoundError(
-            f"Configuration file not found: {path}", details={"path": path}
-        )
+        exc = ConfigNotFoundError(f"Configuration file not found: {path}", details={"path": path})
         assert path in exc.message
         assert exc.details["path"] == path
 
@@ -261,9 +259,7 @@ class TestExceptionUseCases:
     def test_server_already_exists_with_name(self):
         """ServerAlreadyExistsError should include server name."""
         name = "existing-server"
-        exc = ServerAlreadyExistsError(
-            f"Server '{name}' already exists", details={"name": name}
-        )
+        exc = ServerAlreadyExistsError(f"Server '{name}' already exists", details={"name": name})
         assert name in exc.message
         assert exc.details["name"] == name
 

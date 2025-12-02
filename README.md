@@ -195,11 +195,46 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install dependencies
 uv sync
 
+# Install pre-commit hooks (recommended)
+uv run pre-commit install
+
 # Run tests
 uv run pytest
 
 # Run with coverage
 uv run pytest --cov
+```
+
+### Pre-commit Hooks
+
+This project uses [pre-commit](https://pre-commit.com/) to ensure code quality before commits.
+
+**Setup** (one-time):
+```bash
+uv run pre-commit install
+```
+
+**What runs on each commit:**
+- ✅ Ruff linting with auto-fix
+- ✅ Ruff formatting
+- ✅ Mypy type checking
+- ✅ Trailing whitespace removal
+- ✅ YAML/TOML/JSON validation
+- ✅ Large file detection
+- ✅ Debug statement detection
+
+**Manual run** (optional):
+```bash
+# Run on all files
+uv run pre-commit run --all-files
+
+# Run specific hook
+uv run pre-commit run ruff --all-files
+```
+
+**Skip hooks** (if needed):
+```bash
+git commit --no-verify
 ```
 
 ### Project Structure
@@ -231,15 +266,21 @@ uv run pytest -n auto
 
 ### Code Quality
 
+**Automated** (via pre-commit hooks):
 ```bash
-# Format code
-uv run black src/ tests/
+# Runs on every commit automatically after `pre-commit install`
+git commit -m "Your changes"
+```
 
-# Lint
-uv run ruff check src/ tests/
+**Manual**:
+```bash
+# Run all quality checks
+uv run pre-commit run --all-files
 
-# Type check
-uv run mypy src/
+# Individual commands
+uv run ruff check src/ tests/     # Lint
+uv run ruff format src/ tests/    # Format
+uv run mypy src/                  # Type check
 ```
 
 ## Contributing
@@ -248,9 +289,15 @@ Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+3. Install pre-commit hooks: `uv run pre-commit install`
+4. Add tests for new functionality
+5. Ensure all tests pass and pre-commit checks succeed
+6. Submit a pull request
+
+All pull requests are automatically checked by CI for:
+- Code quality (ruff + mypy)
+- Test coverage (pytest)
+- Cross-platform compatibility (Linux, macOS, Windows)
 
 ## License
 

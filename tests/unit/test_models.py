@@ -70,9 +70,7 @@ class TestMCPServerModel:
 
     def test_create_sse_server(self):
         """Should create valid SSE server."""
-        server = MCPServer(
-            type=MCPServerType.SSE, url="https://events.example.com/mcp"
-        )
+        server = MCPServer(type=MCPServerType.SSE, url="https://events.example.com/mcp")
         assert server.type == "sse"
         assert server.url == "https://events.example.com/mcp"
 
@@ -345,9 +343,7 @@ class TestModelIntegration:
         config = Config()
         assert config.mcpServers == {}
 
-        config.mcpServers["new"] = MCPServer(
-            type=MCPServerType.STDIO, command="test"
-        )
+        config.mcpServers["new"] = MCPServer(type=MCPServerType.STDIO, command="test")
         assert len(config.mcpServers) == 1
         assert "new" in config.mcpServers
 
@@ -363,9 +359,7 @@ class TestModelEdgeCases:
     def test_server_with_both_command_and_url(self):
         """Should allow server with both command and url (even if unusual)."""
         # This is technically valid per the model, just unusual
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="test", url="http://example.com"
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="test", url="http://example.com")
         assert server.command == "test"
         assert server.url == "http://example.com"
 
@@ -388,8 +382,7 @@ class TestModelEdgeCases:
     def test_large_number_of_servers(self):
         """Should handle many servers."""
         servers = {
-            f"server{i}": MCPServer(type=MCPServerType.STDIO, command=f"cmd{i}")
-            for i in range(100)
+            f"server{i}": MCPServer(type=MCPServerType.STDIO, command=f"cmd{i}") for i in range(100)
         }
         config = Config(mcpServers=servers)
         assert len(config.mcpServers) == 100

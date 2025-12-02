@@ -234,9 +234,7 @@ class TestValidateServer:
 
     def test_valid_http_server(self):
         """Should accept valid HTTP server."""
-        server = MCPServer(
-            type=MCPServerType.HTTP, url="https://api.example.com/mcp"
-        )
+        server = MCPServer(type=MCPServerType.HTTP, url="https://api.example.com/mcp")
         assert validate_server(server) is True
 
     def test_valid_sse_server(self):
@@ -254,9 +252,7 @@ class TestValidateServer:
 
     def test_stdio_with_invalid_command(self):
         """Should reject stdio server with invalid command."""
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="nonexistent-command-12345"
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="nonexistent-command-12345")
         with pytest.raises(InvalidCommandError):
             validate_server(server)
 

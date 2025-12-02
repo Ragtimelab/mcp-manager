@@ -18,7 +18,9 @@ class TestBackupManagerInit:
 
     def test_init_with_default_dir(self, tmp_path, monkeypatch):
         """Should use default backup directory."""
-        monkeypatch.setattr(backup_module, 'DEFAULT_BACKUP_DIR', tmp_path / ".mcp-manager" / "backups")
+        monkeypatch.setattr(
+            backup_module, "DEFAULT_BACKUP_DIR", tmp_path / ".mcp-manager" / "backups"
+        )
         manager = BackupManager()
         assert manager.backup_dir == tmp_path / ".mcp-manager" / "backups"
 
@@ -359,9 +361,7 @@ class TestBackupManagerIntegration:
         manager = BackupManager(backup_dir=tmp_path)
         config = Config(mcpServers={})
 
-        _backup = manager.create(
-            config, name="important", reason="Before major update"
-        )
+        _backup = manager.create(config, name="important", reason="Before major update")
 
         backups = manager.list()
         loaded = backups[0]
@@ -404,8 +404,7 @@ class TestBackupManagerEdgeCases:
         """Should backup large configuration."""
         manager = BackupManager(backup_dir=tmp_path)
         servers = {
-            f"server{i}": MCPServer(type=MCPServerType.STDIO, command=f"cmd{i}")
-            for i in range(100)
+            f"server{i}": MCPServer(type=MCPServerType.STDIO, command=f"cmd{i}") for i in range(100)
         }
         config = Config(mcpServers=servers)
 

@@ -64,6 +64,7 @@ dev-dependencies = [
     "ruff>=0.6.0",
     "black>=24.0.0",
     "mypy>=1.10.0",
+    "pre-commit>=4.0.0",
 ]
 
 [tool.ruff]

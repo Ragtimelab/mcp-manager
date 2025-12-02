@@ -102,9 +102,7 @@ def validate_url(url: str) -> bool:
         HttpUrl(url)
         return True
     except PydanticValidationError as e:
-        raise InvalidURLError(
-            f"Invalid URL: {url}", details={"url": url, "error": str(e)}
-        )
+        raise InvalidURLError(f"Invalid URL: {url}", details={"url": url, "error": str(e)})
 
 
 def validate_env_vars(env: dict[str, str]) -> bool:

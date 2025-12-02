@@ -21,25 +21,27 @@ class TestConfigManagerInit:
 
     def test_init_with_default_scope(self, tmp_path, monkeypatch):
         """Should use USER scope by default."""
-        monkeypatch.setattr(config_module, 'DEFAULT_CONFIG_PATH', tmp_path / ".claude.json")
+        monkeypatch.setattr(config_module, "DEFAULT_CONFIG_PATH", tmp_path / ".claude.json")
         manager = ConfigManager()
         assert manager.config_path == tmp_path / ".claude.json"
 
     def test_init_with_user_scope(self, tmp_path, monkeypatch):
         """Should use ~/.claude.json for USER scope."""
-        monkeypatch.setattr(config_module, 'DEFAULT_CONFIG_PATH', tmp_path / ".claude.json")
+        monkeypatch.setattr(config_module, "DEFAULT_CONFIG_PATH", tmp_path / ".claude.json")
         manager = ConfigManager(scope=Scope.USER)
         assert manager.config_path == tmp_path / ".claude.json"
 
     def test_init_with_project_scope(self, tmp_path, monkeypatch):
         """Should use .mcp.json for PROJECT scope."""
-        monkeypatch.setattr(config_module, 'PROJECT_CONFIG_PATH', tmp_path / ".mcp.json")
+        monkeypatch.setattr(config_module, "PROJECT_CONFIG_PATH", tmp_path / ".mcp.json")
         manager = ConfigManager(scope=Scope.PROJECT)
         assert manager.config_path == tmp_path / ".mcp.json"
 
     def test_init_with_local_scope(self, tmp_path, monkeypatch):
         """Should use .claude/settings.json for LOCAL scope."""
-        monkeypatch.setattr(config_module, 'LOCAL_CONFIG_PATH', tmp_path / ".claude" / "settings.json")
+        monkeypatch.setattr(
+            config_module, "LOCAL_CONFIG_PATH", tmp_path / ".claude" / "settings.json"
+        )
         manager = ConfigManager(scope=Scope.LOCAL)
         assert manager.config_path == tmp_path / ".claude" / "settings.json"
 
@@ -182,9 +184,7 @@ class TestConfigManagerSave:
         manager.load()  # Load to cache
 
         # Modify cache
-        manager._config.mcpServers["new"] = MCPServer(
-            type=MCPServerType.STDIO, command="test"
-        )
+        manager._config.mcpServers["new"] = MCPServer(type=MCPServerType.STDIO, command="test")
 
         # Save without argument
         manager.save()
@@ -205,9 +205,7 @@ class TestConfigManagerSave:
         config_path = tmp_path / "config.json"
         manager = ConfigManager(config_path=config_path)
 
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="test", env={"NAME": "테스트"}
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="test", env={"NAME": "테스트"})
         config = Config(mcpServers={"test": server})
         manager.save(config)
 
@@ -254,11 +252,7 @@ class TestConfigManagerAddServer:
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
-                {
-                    "mcpServers": {
-                        "time": {"type": "stdio", "command": "uvx", "args": [], "env": {}}
-                    }
-                }
+                {"mcpServers": {"time": {"type": "stdio", "command": "uvx", "args": [], "env": {}}}}
             )
         )
 
@@ -279,11 +273,7 @@ class TestConfigManagerRemoveServer:
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
-                {
-                    "mcpServers": {
-                        "time": {"type": "stdio", "command": "uvx", "args": [], "env": {}}
-                    }
-                }
+                {"mcpServers": {"time": {"type": "stdio", "command": "uvx", "args": [], "env": {}}}}
             )
         )
 
@@ -332,11 +322,7 @@ class TestConfigManagerGetServer:
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
-                {
-                    "mcpServers": {
-                        "time": {"type": "stdio", "command": "uvx", "args": [], "env": {}}
-                    }
-                }
+                {"mcpServers": {"time": {"type": "stdio", "command": "uvx", "args": [], "env": {}}}}
             )
         )
 

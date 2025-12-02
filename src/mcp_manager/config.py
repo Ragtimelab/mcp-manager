@@ -24,9 +24,7 @@ from mcp_manager.models import Config, MCPServer, MCPServerType, Scope
 class ConfigManager:
     """Manage MCP server configuration files."""
 
-    def __init__(
-        self, config_path: Optional[Path] = None, scope: Scope = Scope.USER
-    ):
+    def __init__(self, config_path: Optional[Path] = None, scope: Scope = Scope.USER):
         """Initialize configuration manager.
 
         Args:
@@ -115,9 +113,7 @@ class ConfigManager:
 
         try:
             # Serialize to JSON
-            json_str = json.dumps(
-                config.model_dump(mode="json"), indent=2, ensure_ascii=False
-            )
+            json_str = json.dumps(config.model_dump(mode="json"), indent=2, ensure_ascii=False)
 
             # Write atomically
             atomic_write(self.config_path, json_str + "\n")
@@ -196,9 +192,7 @@ class ConfigManager:
         # Filter by type if specified
         if server_type:
             servers = {
-                name: server
-                for name, server in servers.items()
-                if server.type == server_type
+                name: server for name, server in servers.items() if server.type == server_type
             }
 
         return servers

@@ -1,7 +1,5 @@
 """Unit tests for utils module."""
 
-
-
 from mcp_manager import utils
 from mcp_manager.models import MCPServer, MCPServerType, Scope
 from mcp_manager.utils import expand_env_vars, format_server_info, get_config_path
@@ -12,19 +10,19 @@ class TestGetConfigPath:
 
     def test_user_scope(self, tmp_path, monkeypatch):
         """Should return ~/.claude.json for USER scope."""
-        monkeypatch.setattr(utils, 'DEFAULT_CONFIG_PATH', tmp_path / ".claude.json")
+        monkeypatch.setattr(utils, "DEFAULT_CONFIG_PATH", tmp_path / ".claude.json")
         path = get_config_path(Scope.USER)
         assert path == tmp_path / ".claude.json"
 
     def test_project_scope(self, tmp_path, monkeypatch):
         """Should return .mcp.json for PROJECT scope."""
-        monkeypatch.setattr(utils, 'PROJECT_CONFIG_PATH', tmp_path / ".mcp.json")
+        monkeypatch.setattr(utils, "PROJECT_CONFIG_PATH", tmp_path / ".mcp.json")
         path = get_config_path(Scope.PROJECT)
         assert path == tmp_path / ".mcp.json"
 
     def test_local_scope(self, tmp_path, monkeypatch):
         """Should return .claude/settings.json for LOCAL scope."""
-        monkeypatch.setattr(utils, 'LOCAL_CONFIG_PATH', tmp_path / ".claude" / "settings.json")
+        monkeypatch.setattr(utils, "LOCAL_CONFIG_PATH", tmp_path / ".claude" / "settings.json")
         path = get_config_path(Scope.LOCAL)
         assert path == tmp_path / ".claude" / "settings.json"
 
@@ -94,6 +92,7 @@ class TestExpandEnvVars:
         result = expand_env_vars("Unicode: ${UNICODE_VAR}")
         # Use variable to avoid Unicode character mismatch
         assert result == f"Unicode: {test_value}"
+
     def test_expand_multiple_same_var(self, monkeypatch):
         """Should expand same variable multiple times."""
         monkeypatch.setenv("REPEAT", "val")
@@ -137,18 +136,14 @@ class TestFormatServerInfo:
 
     def test_format_stdio_with_args(self):
         """Should format stdio server with arguments."""
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="uvx", args=["mcp-server-time"]
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="uvx", args=["mcp-server-time"])
         result = format_server_info(server)
 
         assert "Arguments: mcp-server-time" in result
 
     def test_format_stdio_with_multiple_args(self):
         """Should format stdio server with multiple arguments."""
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="uvx", args=["arg1", "arg2", "arg3"]
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="uvx", args=["arg1", "arg2", "arg3"])
         result = format_server_info(server)
 
         assert "Arguments: arg1 arg2 arg3" in result
@@ -180,9 +175,7 @@ class TestFormatServerInfo:
 
     def test_format_http_server_basic(self):
         """Should format HTTP server basic info."""
-        server = MCPServer(
-            type=MCPServerType.HTTP, url="https://api.example.com/mcp"
-        )
+        server = MCPServer(type=MCPServerType.HTTP, url="https://api.example.com/mcp")
         result = format_server_info(server)
 
         assert "Type: http" in result
@@ -269,9 +262,7 @@ class TestFormatServerInfo:
 
     def test_format_multiline_output(self):
         """Should produce multiline output."""
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="uvx", args=["arg1"], env={"K": "v"}
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="uvx", args=["arg1"], env={"K": "v"})
         result = format_server_info(server, verbose=True)
 
         lines = result.split("\n")
@@ -293,9 +284,11 @@ class TestUtilsIntegration:
 
     def test_get_config_path_for_each_scope(self, tmp_path, monkeypatch):
         """Should return different paths for different scopes."""
-        monkeypatch.setattr(utils, 'DEFAULT_CONFIG_PATH', tmp_path / "home" / ".claude.json")
-        monkeypatch.setattr(utils, 'PROJECT_CONFIG_PATH', tmp_path / "project" / ".mcp.json")
-        monkeypatch.setattr(utils, 'LOCAL_CONFIG_PATH', tmp_path / "project" / ".claude" / "settings.json")
+        monkeypatch.setattr(utils, "DEFAULT_CONFIG_PATH", tmp_path / "home" / ".claude.json")
+        monkeypatch.setattr(utils, "PROJECT_CONFIG_PATH", tmp_path / "project" / ".mcp.json")
+        monkeypatch.setattr(
+            utils, "LOCAL_CONFIG_PATH", tmp_path / "project" / ".claude" / "settings.json"
+        )
 
         user_path = get_config_path(Scope.USER)
         project_path = get_config_path(Scope.PROJECT)
@@ -322,9 +315,7 @@ class TestUtilsEdgeCases:
 
     def test_format_server_with_empty_values(self):
         """Should handle empty values in server."""
-        server = MCPServer(
-            type=MCPServerType.STDIO, command="test", args=[], env={}
-        )
+        server = MCPServer(type=MCPServerType.STDIO, command="test", args=[], env={})
         result = format_server_info(server, verbose=True)
 
         # Should not crash, should produce valid output

@@ -65,7 +65,7 @@ def expand_env_vars(text: str) -> str:
 
     # Normalize to NFC for consistent Unicode representation across platforms
     # (macOS uses NFD for environment variables, NFC is standard elsewhere)
-    return unicodedata.normalize('NFC', result)
+    return unicodedata.normalize("NFC", result)
 
 
 def format_server_info(server: MCPServer, verbose: bool = False) -> str:
