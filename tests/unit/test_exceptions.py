@@ -11,8 +11,8 @@ from mcp_manager.exceptions import (
     ConfigError,
     ConfigNotFoundError,
     ConfigPermissionError,
-    FileLockError,
     FileIOError,
+    FileLockError,
     FileReadError,
     FileWriteError,
     HealthCheckError,
@@ -214,7 +214,7 @@ class TestSpecificExceptions:
         """ConfigNotFoundError should be distinct from other config errors."""
         exc1 = ConfigNotFoundError("Not found")
         exc2 = ConfigCorruptedError("Corrupted")
-        assert type(exc1) != type(exc2)
+        assert type(exc1) is not type(exc2)
         assert isinstance(exc1, ConfigError)
         assert isinstance(exc2, ConfigError)
 
@@ -223,13 +223,15 @@ class TestSpecificExceptions:
         exc1 = InvalidServerNameError("Invalid name")
         exc2 = InvalidCommandError("Invalid command")
         exc3 = InvalidURLError("Invalid URL")
-        assert type(exc1) != type(exc2) != type(exc3)
+        assert type(exc1) is not type(exc2)
+        assert type(exc2) is not type(exc3)
+        assert type(exc1) is not type(exc3)
 
     def test_backup_errors_are_distinct(self):
         """Different backup errors should be distinct types."""
         exc1 = BackupNotFoundError("Not found")
         exc2 = BackupCorruptedError("Corrupted")
-        assert type(exc1) != type(exc2)
+        assert type(exc1) is not type(exc2)
         assert isinstance(exc1, BackupError)
         assert isinstance(exc2, BackupError)
 

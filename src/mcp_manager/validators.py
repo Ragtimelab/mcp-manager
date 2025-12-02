@@ -2,9 +2,9 @@
 
 import re
 import shutil
-from typing import Optional
 
-from pydantic import HttpUrl, ValidationError as PydanticValidationError
+from pydantic import HttpUrl
+from pydantic import ValidationError as PydanticValidationError
 
 from mcp_manager.constants import (
     ALLOWED_COMMANDS,

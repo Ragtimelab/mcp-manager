@@ -5,7 +5,6 @@
 import shutil
 import subprocess
 from enum import Enum
-from typing import Optional
 
 from mcp_manager.constants import DEFAULT_HEALTH_TIMEOUT
 from mcp_manager.models import MCPServer, MCPServerType

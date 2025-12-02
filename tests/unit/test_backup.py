@@ -1,9 +1,6 @@
 """Unit tests for backup module."""
 
 import json
-from datetime import datetime
-from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -12,7 +9,6 @@ from mcp_manager.backup import BackupManager
 from mcp_manager.exceptions import (
     BackupCorruptedError,
     BackupNotFoundError,
-    BackupRestoreError,
 )
 from mcp_manager.models import Backup, Config, MCPServer, MCPServerType
 
@@ -144,9 +140,9 @@ class TestBackupManagerList:
         manager = BackupManager(backup_dir=tmp_path)
         config = Config(mcpServers={})
 
-        backup1 = manager.create(config, name="first")
-        backup2 = manager.create(config, name="second")
-        backup3 = manager.create(config, name="third")
+        _backup1 = manager.create(config, name="first")
+        _backup2 = manager.create(config, name="second")
+        _backup3 = manager.create(config, name="third")
 
         backups = manager.list()
 
@@ -290,9 +286,9 @@ class TestBackupManagerCleanup:
         config = Config(mcpServers={})
 
         # Create backups with distinct names
-        oldest = manager.create(config, name="oldest")
-        middle = manager.create(config, name="middle")
-        newest = manager.create(config, name="newest")
+        _oldest = manager.create(config, name="oldest")
+        _middle = manager.create(config, name="middle")
+        _newest = manager.create(config, name="newest")
 
         manager.cleanup(keep=2)
 
@@ -363,7 +359,7 @@ class TestBackupManagerIntegration:
         manager = BackupManager(backup_dir=tmp_path)
         config = Config(mcpServers={})
 
-        backup = manager.create(
+        _backup = manager.create(
             config, name="important", reason="Before major update"
         )
 

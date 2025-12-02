@@ -1,10 +1,6 @@
 """Unit tests for utils module."""
 
-import os
-from pathlib import Path
-from unittest.mock import patch
 
-import pytest
 
 from mcp_manager import utils
 from mcp_manager.models import MCPServer, MCPServerType, Scope
@@ -288,7 +284,7 @@ class TestUtilsIntegration:
     def test_expand_env_in_server_format(self, monkeypatch):
         """Should expand env vars before formatting."""
         monkeypatch.setenv("CMD_NAME", "my-command")
-        server = MCPServer(type=MCPServerType.STDIO, command="uvx")
+        _server = MCPServer(type=MCPServerType.STDIO, command="uvx")
 
         # First expand
         expanded_cmd = expand_env_vars("${CMD_NAME}")

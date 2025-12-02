@@ -1,7 +1,6 @@
 """Backup and restore functionality for MCP configurations."""
 
 import json
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 

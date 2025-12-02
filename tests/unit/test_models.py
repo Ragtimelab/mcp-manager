@@ -251,7 +251,7 @@ class TestBackupModel:
         config = Config()
         timestamp = datetime(2024, 12, 2, 14, 30, 45)
         backup = Backup(config=config, timestamp=timestamp)
-        assert backup.backup_id == "20241202-143045"
+        assert backup.backup_id == "20241202-143045-000000"
 
     def test_backup_id_is_property(self):
         """Backup ID should be read-only property."""
@@ -261,7 +261,8 @@ class TestBackupModel:
         assert "backup_id" not in backup.model_dump()
         # But should be accessible
         assert isinstance(backup.backup_id, str)
-        assert len(backup.backup_id) == 15  # YYYYMMDD-HHMMSS
+        assert len(backup.backup_id) == 22  # YYYYMMDD-HHMMSS-mmmmmm
+        assert backup.backup_id.count("-") == 2  # Two dashes
 
     def test_backup_default_timestamp(self):
         """Backup should default to current time."""

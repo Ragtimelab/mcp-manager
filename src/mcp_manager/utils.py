@@ -4,6 +4,7 @@ import os
 import re
 import unicodedata
 from pathlib import Path
+from re import Match
 
 from mcp_manager.constants import (
     DEFAULT_CONFIG_PATH,
@@ -44,7 +45,7 @@ def expand_env_vars(text: str) -> str:
         Text with expanded variables
     """
 
-    def replace(match):
+    def replace(match: Match[str]) -> str:
         var_expr = match.group(1)
 
         # Check for default value syntax

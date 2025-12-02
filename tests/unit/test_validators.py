@@ -202,7 +202,7 @@ class TestValidateEnvVars:
 
     def test_safe_special_chars(self):
         """Should allow safe special characters."""
-        safe = {
+        _safe = {
             "URL": "https://example.com",
             "PATH_LIKE": "/usr/bin:/usr/local/bin",  # Colon is safe
             "HASH": "abc#def",  # Hash is safe
@@ -269,7 +269,7 @@ class TestValidateServer:
 
     def test_http_with_invalid_url(self):
         """Should reject HTTP server with invalid URL."""
-        server = MCPServer(type=MCPServerType.HTTP, url="invalid-url")
+        _server = MCPServer(type=MCPServerType.HTTP, url="invalid-url")
         # Need to bypass Pydantic validation in model
         # Since our model validates, let's just test the validator directly
         with pytest.raises(InvalidURLError):

@@ -3,7 +3,6 @@
 # TODO: Implement CLI commands using Typer and Rich
 # This is the main entry point for the CLI application
 
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -16,7 +15,7 @@ app = typer.Typer(
 console = Console()
 
 
-def main():
+def main() -> None:
     """Main entry point."""
     app()
 

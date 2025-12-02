@@ -4,7 +4,7 @@ __version__ = "0.1.0"
 __author__ = "Your Name"
 __license__ = "MIT"
 
-from mcp_manager.models import MCPServer, MCPServerType, Config, Scope
+from mcp_manager.models import Config, MCPServer, MCPServerType, Scope
 
 __all__ = [
     "__version__",

@@ -2,8 +2,6 @@
 
 from pathlib import Path
 
-import pytest
-
 from mcp_manager.constants import (
     ALLOWED_COMMANDS,
     DANGEROUS_ENV_VARS,

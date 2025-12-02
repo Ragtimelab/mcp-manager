@@ -57,7 +57,7 @@ class FileLock:
         self.mode = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
         self.fd: Optional[int] = None
 
-    def __enter__(self):
+    def __enter__(self) -> int:
         """Acquire lock."""
         # Open file
         flags = os.O_RDWR if self.mode == fcntl.LOCK_EX else os.O_RDONLY
@@ -67,7 +67,7 @@ class FileLock:
         fcntl.flock(self.fd, self.mode)
         return self.fd
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: object) -> None:
         """Release lock."""
         if self.fd is not None:
             fcntl.flock(self.fd, fcntl.LOCK_UN)

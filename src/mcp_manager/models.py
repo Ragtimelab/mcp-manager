@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 
 class MCPServerType(str, Enum):
@@ -53,7 +53,7 @@ class MCPServer(BaseModel):
 
     @field_validator("command")
     @classmethod
-    def validate_stdio_command(cls, v: Optional[str], info) -> Optional[str]:
+    def validate_stdio_command(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
         """Validate that stdio servers have command."""
         if info.data.get("type") == MCPServerType.STDIO and not v:
             raise ValueError("stdio servers require 'command' field")
@@ -61,7 +61,7 @@ class MCPServer(BaseModel):
 
     @field_validator("url")
     @classmethod
-    def validate_http_url(cls, v: Optional[str], info) -> Optional[str]:
+    def validate_http_url(cls, v: Optional[str], info: ValidationInfo) -> Optional[str]:
         """Validate that http/sse servers have URL."""
         server_type = info.data.get("type")
         if server_type in (MCPServerType.HTTP, MCPServerType.SSE) and not v:
