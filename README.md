@@ -8,6 +8,7 @@ Simple CLI tool for managing MCP (Model Context Protocol) servers.
 - MCP 서버 업데이트 (brew upgrade처럼)
 - MCP 서버 상태 확인
 - 설정 백업/복원
+- 설정 진단 및 문제 해결 (brew doctor처럼)
 
 ## 설치
 
@@ -72,6 +73,13 @@ mcpm backup --list
 # 백업 복원
 mcpm backup -r 20251202-143052
 mcpm backup --restore 20251202-143052
+```
+
+### 설정 진단
+
+```bash
+# MCP 설정 진단 및 문제 확인
+mcpm doctor
 ```
 
 ## 명령어 도움말

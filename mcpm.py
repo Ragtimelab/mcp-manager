@@ -2,6 +2,7 @@
 """MCP Manager - Simple CLI for managing MCP servers"""
 
 import json
+import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -225,6 +226,117 @@ def backup_config(
         json.dump(config, f, indent=2)
 
     console.print(f"[green]✅ Backup created:[/] {backup_file}")
+
+
+@app.command("doctor", help="Diagnose MCP configuration issues")
+def doctor():
+    """Diagnose MCP configuration and suggest fixes"""
+    console.print("[bold]Diagnosing MCP configuration...[/]\n")
+
+    errors = 0
+    warnings = 0
+
+    # Check 1: Config file exists
+    if not CONFIG_PATH.exists():
+        console.print("[red]✗[/] ~/.claude.json not found")
+        errors += 1
+        console.print("\n[yellow]Suggestions:[/]")
+        console.print("1. Run Claude Code to create the config file")
+        console.print("2. Or create manually: touch ~/.claude.json")
+        raise typer.Exit(1)
+
+    console.print("[green]✓[/] ~/.claude.json exists")
+
+    # Check 2: Valid JSON
+    try:
+        with open(CONFIG_PATH) as f:
+            config = json.load(f)
+        console.print("[green]✓[/] Valid JSON syntax")
+    except json.JSONDecodeError as e:
+        console.print(f"[red]✗[/] Invalid JSON: {e}")
+        errors += 1
+        console.print("\n[yellow]Suggestions:[/]")
+        console.print(f"1. Fix JSON syntax error at line {e.lineno}")
+        console.print("2. Restore from backup: mcpm backup -l")
+        raise typer.Exit(1)
+
+    # Check 3: mcpServers field exists
+    servers = config.get("mcpServers", {})
+    if not servers:
+        console.print("[yellow]⚠[/] No MCP servers configured")
+        warnings += 1
+    else:
+        console.print(f"[green]✓[/] mcpServers field found ({len(servers)} servers)\n")
+
+    # Check 4: Validate each server
+    if servers:
+        console.print("[bold]Checking servers:[/]")
+        for name, server in servers.items():
+            server_errors = []
+            server_warnings = []
+
+            # Check required fields
+            if "type" not in server:
+                server_errors.append("missing 'type' field")
+            elif server["type"] not in ["stdio", "sse", "http"]:
+                server_errors.append(f"invalid type '{server['type']}'")
+
+            if server.get("type") == "stdio":
+                if "command" not in server:
+                    server_errors.append("missing 'command' field")
+                if "args" not in server:
+                    server_warnings.append("missing 'args' field (using [])")
+
+            # Check command availability
+            cmd = server.get("command")
+            if cmd:
+                if not shutil.which(cmd):
+                    server_errors.append(f"command '{cmd}' not found in PATH")
+
+            # Check args length
+            args = server.get("args", [])
+            if len(args) > 10:
+                server_warnings.append(f"large args array ({len(args)} items)")
+
+            # Print results
+            if server_errors:
+                console.print(f"[red]✗[/] {name}: {', '.join(server_errors)}")
+                errors += len(server_errors)
+            elif server_warnings:
+                console.print(f"[yellow]⚠[/] {name}: {', '.join(server_warnings)}")
+                warnings += len(server_warnings)
+            else:
+                console.print(f"[green]✓[/] {name}: Valid configuration")
+
+    # Check 5: Required commands availability
+    console.print("\n[bold]Checking system commands:[/]")
+    required_commands = {"uvx": "uv", "npx": "node/npm"}
+
+    for cmd, pkg in required_commands.items():
+        if shutil.which(cmd):
+            console.print(f"[green]✓[/] {cmd} available")
+        else:
+            console.print(f"[yellow]⚠[/] {cmd} not found (needed for {pkg} servers)")
+            warnings += 1
+
+    # Summary
+    console.print("\n[bold]Summary:[/]")
+    if errors == 0 and warnings == 0:
+        console.print(
+            "[green]✅ No issues found! Your MCP configuration is healthy.[/]"
+        )
+    else:
+        console.print(
+            f"Issues found: [red]{errors} error(s)[/], [yellow]{warnings} warning(s)[/]"
+        )
+
+        if errors > 0:
+            console.print("\n[yellow]Suggestions:[/]")
+            console.print("1. Fix errors above to ensure MCP servers work correctly")
+            console.print("2. Run 'mcpm list' to verify server configuration")
+            console.print("3. Run 'mcpm health' to test server executability")
+
+    raise typer.Exit(0 if errors == 0 else 1)
 
 
 if __name__ == "__main__":
