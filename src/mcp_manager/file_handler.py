@@ -24,15 +24,15 @@ def atomic_write(path: Path, content: str) -> None:
     temp_path = path.with_suffix(".tmp")
 
     try:
-        # Write to temp file
-        temp_path.write_text(content)
+        # Write to temp file with UTF-8 encoding (cross-platform Unicode support)
+        temp_path.write_text(content, encoding="utf-8")
 
         # Ensure written to disk (durability)
-        with open(temp_path, "r+") as f:
+        with open(temp_path, "r+", encoding="utf-8") as f:
             os.fsync(f.fileno())
 
-        # Atomic rename
-        temp_path.rename(path)
+        # Atomic replace (works on both Unix and Windows, overwrites target)
+        temp_path.replace(path)
 
     except Exception as e:
         # Cleanup temp file on error
