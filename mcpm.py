@@ -46,7 +46,7 @@ def get_servers(config: dict) -> dict:
 @app.command("list", help="List all MCP servers")
 @app.command("ls", hidden=True)
 def list_servers(
-    verbose: bool = typer.Option(False, "-v", "--verbose", help="Show detailed info")
+    verbose: bool = typer.Option(False, "-v", "--verbose", help="Show detailed info"),
 ):
     """List all MCP servers"""
     config = load_config()
@@ -65,9 +65,9 @@ def list_servers(
 
     for name, server in servers.items():
         cmd = f"{server['command']} {' '.join(server['args'])}"
-        row = [name, server['type'], cmd]
+        row = [name, server["type"], cmd]
         if verbose:
-            row.append(str(server.get('env', {})))
+            row.append(str(server.get("env", {})))
         table.add_row(*row)
 
     console.print(table)
@@ -140,13 +140,13 @@ def health_check(name: Optional[str] = typer.Argument(None, help="Server name"))
     for sname, server in servers.items():
         cmd = [server["command"], *server["args"], "--help"]
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, timeout=10
-            )
+            result = subprocess.run(cmd, capture_output=True, timeout=10)
             if result.returncode == 0:
                 console.print(f"[green]✓[/] {sname}: OK")
             else:
-                console.print(f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})")
+                console.print(
+                    f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})"
+                )
         except Exception as e:
             console.print(f"[red]✗[/] {sname}: ERROR ({e})")
 
@@ -172,7 +172,9 @@ def show_server(name: str = typer.Argument(..., help="Server name")):
 @app.command("backup", help="Backup configuration")
 def backup_config(
     list_backups: bool = typer.Option(False, "-l", "--list", help="List backups"),
-    restore: Optional[str] = typer.Option(None, "-r", "--restore", help="Restore backup"),
+    restore: Optional[str] = typer.Option(
+        None, "-r", "--restore", help="Restore backup"
+    ),
 ):
     """Backup or restore ~/.claude.json"""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
@@ -189,13 +191,19 @@ def backup_config(
             timestamp = backup.stem
             try:
                 dt = datetime.strptime(timestamp, "%Y%m%d-%H%M%S")
-                console.print(f"  {i}. {timestamp}.json ({dt.strftime('%Y-%m-%d %H:%M:%S')})")
-            except:
+                console.print(
+                    f"  {i}. {timestamp}.json ({dt.strftime('%Y-%m-%d %H:%M:%S')})"
+                )
+            except ValueError:
                 console.print(f"  {i}. {backup.name}")
         return
 
     if restore:
-        backup_file = BACKUP_DIR / f"{restore}.json" if not restore.endswith(".json") else BACKUP_DIR / restore
+        backup_file = (
+            BACKUP_DIR / f"{restore}.json"
+            if not restore.endswith(".json")
+            else BACKUP_DIR / restore
+        )
         if not backup_file.exists():
             console.print(f"[red]✗[/] Backup not found: {restore}")
             raise typer.Exit(1)
