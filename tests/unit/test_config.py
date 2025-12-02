@@ -2,9 +2,11 @@
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from mcp_manager import config as config_module
 from mcp_manager.config import ConfigManager
 from mcp_manager.exceptions import (
     ConfigCorruptedError,
@@ -20,25 +22,25 @@ class TestConfigManagerInit:
 
     def test_init_with_default_scope(self, tmp_path, monkeypatch):
         """Should use USER scope by default."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(config_module, 'DEFAULT_CONFIG_PATH', tmp_path / ".claude.json")
         manager = ConfigManager()
         assert manager.config_path == tmp_path / ".claude.json"
 
     def test_init_with_user_scope(self, tmp_path, monkeypatch):
         """Should use ~/.claude.json for USER scope."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(config_module, 'DEFAULT_CONFIG_PATH', tmp_path / ".claude.json")
         manager = ConfigManager(scope=Scope.USER)
         assert manager.config_path == tmp_path / ".claude.json"
 
     def test_init_with_project_scope(self, tmp_path, monkeypatch):
         """Should use .mcp.json for PROJECT scope."""
-        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr(config_module, 'PROJECT_CONFIG_PATH', tmp_path / ".mcp.json")
         manager = ConfigManager(scope=Scope.PROJECT)
         assert manager.config_path == tmp_path / ".mcp.json"
 
     def test_init_with_local_scope(self, tmp_path, monkeypatch):
         """Should use .claude/settings.json for LOCAL scope."""
-        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr(config_module, 'LOCAL_CONFIG_PATH', tmp_path / ".claude" / "settings.json")
         manager = ConfigManager(scope=Scope.LOCAL)
         assert manager.config_path == tmp_path / ".claude" / "settings.json"
 

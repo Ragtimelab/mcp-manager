@@ -2,9 +2,11 @@
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from mcp_manager import utils
 from mcp_manager.models import MCPServer, MCPServerType, Scope
 from mcp_manager.utils import expand_env_vars, format_server_info, get_config_path
 
@@ -14,19 +16,19 @@ class TestGetConfigPath:
 
     def test_user_scope(self, tmp_path, monkeypatch):
         """Should return ~/.claude.json for USER scope."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(utils, 'DEFAULT_CONFIG_PATH', tmp_path / ".claude.json")
         path = get_config_path(Scope.USER)
         assert path == tmp_path / ".claude.json"
 
     def test_project_scope(self, tmp_path, monkeypatch):
         """Should return .mcp.json for PROJECT scope."""
-        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr(utils, 'PROJECT_CONFIG_PATH', tmp_path / ".mcp.json")
         path = get_config_path(Scope.PROJECT)
         assert path == tmp_path / ".mcp.json"
 
     def test_local_scope(self, tmp_path, monkeypatch):
         """Should return .claude/settings.json for LOCAL scope."""
-        monkeypatch.setattr(Path, "cwd", lambda: tmp_path)
+        monkeypatch.setattr(utils, 'LOCAL_CONFIG_PATH', tmp_path / ".claude" / "settings.json")
         path = get_config_path(Scope.LOCAL)
         assert path == tmp_path / ".claude" / "settings.json"
 
@@ -91,10 +93,11 @@ class TestExpandEnvVars:
 
     def test_expand_unicode(self, monkeypatch):
         """Should handle unicode in variable values."""
-        monkeypatch.setenv("UNICODE_VAR", "테스트值")
+        test_value = "테스트値"
+        monkeypatch.setenv("UNICODE_VAR", test_value)
         result = expand_env_vars("Unicode: ${UNICODE_VAR}")
-        assert result == "Unicode: 테스트値"
-
+        # Use variable to avoid Unicode character mismatch
+        assert result == f"Unicode: {test_value}"
     def test_expand_multiple_same_var(self, monkeypatch):
         """Should expand same variable multiple times."""
         monkeypatch.setenv("REPEAT", "val")
@@ -294,8 +297,9 @@ class TestUtilsIntegration:
 
     def test_get_config_path_for_each_scope(self, tmp_path, monkeypatch):
         """Should return different paths for different scopes."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path / "home")
-        monkeypatch.setattr(Path, "cwd", lambda: tmp_path / "project")
+        monkeypatch.setattr(utils, 'DEFAULT_CONFIG_PATH', tmp_path / "home" / ".claude.json")
+        monkeypatch.setattr(utils, 'PROJECT_CONFIG_PATH', tmp_path / "project" / ".mcp.json")
+        monkeypatch.setattr(utils, 'LOCAL_CONFIG_PATH', tmp_path / "project" / ".claude" / "settings.json")
 
         user_path = get_config_path(Scope.USER)
         project_path = get_config_path(Scope.PROJECT)

@@ -124,82 +124,86 @@
 
 ---
 
-## Phase 3: Business Logic Layer
+## Phase 3: Business Logic Layer ✅
 
-### 3.1 Config Manager (`config.py`)
-- [ ] Import models, validators, file_handler, exceptions
-- [ ] Class: `ConfigManager`
-  - [ ] `__init__(self, config_path: Optional[Path] = None, scope: Scope = Scope.USER)`
-  - [ ] Determine config path based on scope
-  - [ ] Property: `config` (lazy loading with caching)
-- [ ] Method: `load(self) -> Config`
-  - [ ] Read file with proper error handling
-  - [ ] Handle `FileNotFoundError` → `ConfigNotFoundError`
-  - [ ] Handle `PermissionError` → `ConfigPermissionError`
-  - [ ] Parse JSON with error handling
-  - [ ] Handle `json.JSONDecodeError` → `ConfigCorruptedError`
-  - [ ] Validate with Pydantic
-  - [ ] Handle `ValidationError` → `ConfigCorruptedError`
-- [ ] Method: `save(self, config: Config) -> None`
-  - [ ] Serialize with `config.model_dump(mode='json')`
-  - [ ] Format JSON with `json.dumps(indent=2)`
-  - [ ] Use `atomic_write` with file locking
-  - [ ] Handle errors appropriately
-- [ ] Method: `add_server(self, name: str, server: MCPServer) -> None`
-  - [ ] Validate server name
-  - [ ] Check if server already exists
-  - [ ] Raise `ServerAlreadyExistsError` if duplicate
-  - [ ] Add to config
-  - [ ] Save config
-- [ ] Method: `remove_server(self, name: str) -> None`
-  - [ ] Check if server exists
-  - [ ] Remove from config
-  - [ ] Save config
-- [ ] Method: `get_server(self, name: str) -> Optional[MCPServer]`
-  - [ ] Return server or None
-- [ ] Method: `list_servers(self, scope: Optional[Scope] = None, server_type: Optional[MCPServerType] = None) -> dict[str, MCPServer]`
-  - [ ] Load config
-  - [ ] Apply filters if provided
-  - [ ] Return filtered dict
+### 3.1 Config Manager (`config.py`) ✅
+- [x] Import models, validators, file_handler, exceptions
+- [x] Class: `ConfigManager`
+  - [x] `__init__(self, config_path: Optional[Path] = None, scope: Scope = Scope.USER)`
+  - [x] Determine config path based on scope
+  - [x] Property: `config` (lazy loading with caching)
+- [x] Method: `load(self) -> Config`
+  - [x] Read file with proper error handling
+  - [x] Handle `FileNotFoundError` → `ConfigNotFoundError`
+  - [x] Handle `PermissionError` → `ConfigPermissionError`
+  - [x] Parse JSON with error handling
+  - [x] Handle `json.JSONDecodeError` → `ConfigCorruptedError`
+  - [x] Validate with Pydantic
+  - [x] Handle `ValidationError` → `ConfigCorruptedError`
+- [x] Method: `save(self, config: Config) -> None`
+  - [x] Serialize with `config.model_dump(mode='json')`
+  - [x] Format JSON with `json.dumps(indent=2)`
+  - [x] Use `atomic_write` with file locking
+  - [x] Handle errors appropriately
+- [x] Method: `add_server(self, name: str, server: MCPServer) -> None`
+  - [x] Validate server name
+  - [x] Check if server already exists
+  - [x] Raise `ServerAlreadyExistsError` if duplicate
+  - [x] Add to config
+  - [x] Save config
+- [x] Method: `remove_server(self, name: str) -> None`
+  - [x] Check if server exists
+  - [x] Remove from config
+  - [x] Save config
+- [x] Method: `get_server(self, name: str) -> Optional[MCPServer]`
+  - [x] Return server or None
+- [x] Method: `list_servers(self, scope: Optional[Scope] = None, server_type: Optional[MCPServerType] = None) -> dict[str, MCPServer]`
+  - [x] Load config
+  - [x] Apply filters if provided
+  - [x] Return filtered dict
 
-### 3.2 Backup Manager (`backup.py`)
-- [ ] Import models, file_handler, exceptions
-- [ ] Class: `BackupManager`
-  - [ ] `__init__(self, backup_dir: Optional[Path] = None)`
-  - [ ] Set backup directory (default: `~/.mcp-manager/backups`)
-  - [ ] Create directory if not exists
-- [ ] Method: `create(self, config: Config, name: Optional[str] = None, reason: Optional[str] = None) -> Backup`
-  - [ ] Create `Backup` object
-  - [ ] Add metadata (reason, user, etc.)
-  - [ ] Generate backup_id from timestamp
-  - [ ] Save to file using `atomic_write`
-  - [ ] Return Backup object
-- [ ] Method: `list(self, limit: int = 10) -> list[Backup]`
-  - [ ] List all backup files
-  - [ ] Parse and validate
-  - [ ] Sort by timestamp (newest first)
-  - [ ] Return limited list
-- [ ] Method: `restore(self, backup_id: str) -> Config`
-  - [ ] Find backup file
-  - [ ] Raise `BackupNotFoundError` if not found
-  - [ ] Load and parse backup
-  - [ ] Return Config object
-- [ ] Method: `cleanup(self, keep: int = 5, older_than: Optional[str] = None) -> int`
-  - [ ] List all backups
-  - [ ] Determine which to delete
-  - [ ] Delete old backups
-  - [ ] Return count of deleted backups
+### 3.2 Backup Manager (`backup.py`) ✅
+- [x] Import models, file_handler, exceptions
+- [x] Class: `BackupManager`
+  - [x] `__init__(self, backup_dir: Optional[Path] = None)`
+  - [x] Set backup directory (default: `~/.mcp-manager/backups`)
+  - [x] Create directory if not exists
+- [x] Method: `create(self, config: Config, name: Optional[str] = None, reason: Optional[str] = None) -> Backup`
+  - [x] Create `Backup` object
+  - [x] Add metadata (reason, user, etc.)
+  - [x] Generate backup_id from timestamp (with microsecond precision)
+  - [x] Save to file using `atomic_write`
+  - [x] Return Backup object
+- [x] Method: `list(self, limit: int = 10) -> list[Backup]`
+  - [x] List all backup files
+  - [x] Parse and validate
+  - [x] Sort by timestamp (newest first)
+  - [x] Return limited list
+- [x] Method: `restore(self, backup_id: str) -> Config`
+  - [x] Find backup file
+  - [x] Raise `BackupNotFoundError` if not found
+  - [x] Load and parse backup
+  - [x] Return Config object
+- [x] Method: `cleanup(self, keep: int = 5, older_than: Optional[str] = None) -> int`
+  - [x] List all backups
+  - [x] Determine which to delete
+  - [x] Delete old backups
+  - [x] Return count of deleted backups
 
-### 3.3 Utilities Module (`utils.py`)
-- [ ] Function: `get_config_path(scope: Scope) -> Path`
-  - [ ] Return appropriate path based on scope
-- [ ] Function: `expand_env_vars(text: str) -> str`
-  - [ ] Expand `${VAR}` syntax
-  - [ ] Support `${VAR:-default}` syntax
-  - [ ] Use regex for pattern matching
-- [ ] Function: `format_server_info(server: MCPServer) -> str`
-  - [ ] Format server for display
-- [ ] Add other utility functions as needed
+### 3.3 Utilities Module (`utils.py`) ✅
+- [x] Function: `get_config_path(scope: Scope) -> Path`
+  - [x] Return appropriate path based on scope
+- [x] Function: `expand_env_vars(text: str) -> str`
+  - [x] Expand `${VAR}` syntax
+  - [x] Support `${VAR:-default}` syntax
+  - [x] Use regex for pattern matching
+  - [x] Apply NFC Unicode normalization for cross-platform consistency
+- [x] Function: `format_server_info(server: MCPServer) -> str`
+  - [x] Format server for display
+  - [x] Mask sensitive headers (Authorization, tokens)
+- [x] Add other utility functions as needed
+
+**Tests**: 102/102 passing (100%) 🎉
 
 ---
 

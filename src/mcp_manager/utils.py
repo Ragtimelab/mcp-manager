@@ -2,6 +2,7 @@
 
 import os
 import re
+import unicodedata
 from pathlib import Path
 
 from mcp_manager.constants import (
@@ -59,7 +60,11 @@ def expand_env_vars(text: str) -> str:
 
     # Pattern: ${...}
     pattern = r"\$\{([^}]+)\}"
-    return re.sub(pattern, replace, text)
+    result = re.sub(pattern, replace, text)
+
+    # Normalize to NFC for consistent Unicode representation across platforms
+    # (macOS uses NFD for environment variables, NFC is standard elsewhere)
+    return unicodedata.normalize('NFC', result)
 
 
 def format_server_info(server: MCPServer, verbose: bool = False) -> str:

@@ -95,5 +95,5 @@ class Backup(BaseModel):
 
     @property
     def backup_id(self) -> str:
-        """Unique backup identifier based on timestamp."""
-        return self.timestamp.strftime("%Y%m%d-%H%M%S")
+        """Unique backup identifier based on timestamp with microsecond precision."""
+        return self.timestamp.strftime("%Y%m%d-%H%M%S-%f")

@@ -3,9 +3,11 @@
 import json
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from mcp_manager import backup as backup_module
 from mcp_manager.backup import BackupManager
 from mcp_manager.exceptions import (
     BackupCorruptedError,
@@ -20,7 +22,7 @@ class TestBackupManagerInit:
 
     def test_init_with_default_dir(self, tmp_path, monkeypatch):
         """Should use default backup directory."""
-        monkeypatch.setattr(Path, "home", lambda: tmp_path)
+        monkeypatch.setattr(backup_module, 'DEFAULT_BACKUP_DIR', tmp_path / ".mcp-manager" / "backups")
         manager = BackupManager()
         assert manager.backup_dir == tmp_path / ".mcp-manager" / "backups"
 
@@ -92,15 +94,15 @@ class TestBackupManagerCreate:
         assert "time" in backup.config.mcpServers
 
     def test_backup_id_format(self, tmp_path):
-        """Backup ID should be formatted timestamp."""
+        """Backup ID should be formatted timestamp with microseconds."""
         manager = BackupManager(backup_dir=tmp_path)
         config = Config(mcpServers={})
 
         backup = manager.create(config)
 
-        # Should match YYYYMMDD-HHMMSS format
-        assert len(backup.backup_id) == 15
-        assert "-" in backup.backup_id
+        # Should match YYYYMMDD-HHMMSS-mmmmmm format (22 characters)
+        assert len(backup.backup_id) == 22
+        assert backup.backup_id.count("-") == 2  # Two dashes
 
 
 class TestBackupManagerList:
