@@ -48,30 +48,46 @@ def get_servers(config: dict) -> dict:
 @app.command("ls", hidden=True)
 def list_servers(
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Show detailed info"),
+    all_servers: bool = typer.Option(False, "-a", "--all", help="Include disabled servers"),
 ):
     """List all MCP servers"""
     config = load_config()
     servers = get_servers(config)
+    disabled = config.get("_disabled_mcpServers", {})
 
-    if not servers:
+    if not servers and not disabled:
         console.print("[yellow]No MCP servers found[/]")
         return
 
     table = Table(title="MCP Servers")
     table.add_column("Name", style="cyan")
+    table.add_column("Status", style="white")
     table.add_column("Type", style="magenta")
     table.add_column("Command", style="green")
     if verbose:
         table.add_column("Env", style="yellow")
 
+    # Active servers
     for name, server in servers.items():
         cmd = f"{server['command']} {' '.join(server['args'])}"
-        row = [name, server["type"], cmd]
+        row = [name, "[green]●[/] active", server["type"], cmd]
         if verbose:
             row.append(str(server.get("env", {})))
         table.add_row(*row)
 
+    # Disabled servers
+    if all_servers and disabled:
+        for name, server in disabled.items():
+            cmd = f"{server['command']} {' '.join(server['args'])}"
+            row = [name, "[dim]○[/] disabled", server["type"], cmd]
+            if verbose:
+                row.append(str(server.get("env", {})))
+            table.add_row(*row)
+
     console.print(table)
+
+    if disabled and not all_servers:
+        console.print(f"\n[dim]{len(disabled)} disabled server(s). Use -a to show all.[/]")
 
 
 @app.command("upgrade", help="Upgrade MCP servers")
@@ -243,6 +259,160 @@ def backup_config(
         json.dump(config, f, indent=2)
 
     console.print(f"[green]✅ Backup created:[/] {backup_file}")
+
+
+@app.command("install", help="Install MCP server")
+def install_server(
+    package: str = typer.Argument(..., help="Package name"),
+    name: Optional[str] = typer.Option(None, "--name", help="Custom server name"),
+):
+    """Install and configure MCP server"""
+    config = load_config()
+    servers = config.get("mcpServers", {})
+
+    # Detect package type
+    if package.startswith("@") or "/" in package:
+        cmd = "npx"
+        args = ["-y", package]
+    else:
+        cmd = "uvx"
+        args = [package]
+
+    # Determine server name
+    server_name = name or package.split("/")[-1].replace("@", "").replace("mcp-server-", "")
+
+    # Check if already exists
+    if server_name in servers:
+        console.print(f"[red]✗[/] Server '{server_name}' already exists")
+        console.print(f"[yellow]Hint:[/] Use 'mcpm uninstall {server_name}' first")
+        raise typer.Exit(1)
+
+    # Create backup
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    backup_file = BACKUP_DIR / f"{timestamp}.json"
+    with open(backup_file, "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Add server
+    servers[server_name] = {"type": "stdio", "command": cmd, "args": args}
+    config["mcpServers"] = servers
+
+    # Save
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    console.print(f"[green]✓[/] Installed '{server_name}'")
+    console.print(f"  Command: {cmd} {' '.join(args)}")
+    console.print("[yellow]Note:[/] Restart Claude Code to activate")
+
+
+@app.command("uninstall", help="Uninstall MCP server")
+def uninstall_server(
+    name: str = typer.Argument(..., help="Server name"),
+    force: bool = typer.Option(False, "--force", help="Skip confirmation"),
+):
+    """Remove MCP server from configuration"""
+    config = load_config()
+    servers = config.get("mcpServers", {})
+
+    if name not in servers:
+        console.print(f"[red]✗[/] Server '{name}' not found")
+        raise typer.Exit(1)
+
+    # Confirmation
+    if not force:
+        console.print(f"[yellow]Remove server '{name}'?[/]")
+        console.print(f"  Command: {servers[name]['command']} {' '.join(servers[name]['args'])}")
+        confirm = typer.confirm("Continue?")
+        if not confirm:
+            console.print("[yellow]Cancelled[/]")
+            raise typer.Exit(0)
+
+    # Create backup
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    backup_file = BACKUP_DIR / f"{timestamp}.json"
+    with open(backup_file, "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Remove server
+    del servers[name]
+    config["mcpServers"] = servers
+
+    # Save
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    console.print(f"[green]✓[/] Uninstalled '{name}'")
+    console.print("[yellow]Note:[/] Restart Claude Code to apply changes")
+
+
+@app.command("disable", help="Disable MCP server")
+def disable_server(name: str = typer.Argument(..., help="Server name")):
+    """Disable MCP server (move to _disabled_mcpServers)"""
+    config = load_config()
+    servers = config.get("mcpServers", {})
+    disabled = config.get("_disabled_mcpServers", {})
+
+    if name not in servers:
+        console.print(f"[red]✗[/] Server '{name}' not found or already disabled")
+        raise typer.Exit(1)
+
+    # Create backup
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    backup_file = BACKUP_DIR / f"{timestamp}.json"
+    with open(backup_file, "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Move to disabled
+    disabled[name] = servers[name]
+    del servers[name]
+    config["mcpServers"] = servers
+    config["_disabled_mcpServers"] = disabled
+
+    # Save
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    console.print(f"[green]✓[/] Disabled '{name}'")
+    console.print("[yellow]Note:[/] Restart Claude Code to apply changes")
+
+
+@app.command("enable", help="Enable MCP server")
+def enable_server(name: str = typer.Argument(..., help="Server name")):
+    """Enable MCP server (move from _disabled_mcpServers)"""
+    config = load_config()
+    servers = config.get("mcpServers", {})
+    disabled = config.get("_disabled_mcpServers", {})
+
+    if name not in disabled:
+        console.print(f"[red]✗[/] Server '{name}' not found in disabled servers")
+        raise typer.Exit(1)
+
+    # Create backup
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+    backup_file = BACKUP_DIR / f"{timestamp}.json"
+    with open(backup_file, "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Move to active
+    servers[name] = disabled[name]
+    del disabled[name]
+    config["mcpServers"] = servers
+    if disabled:
+        config["_disabled_mcpServers"] = disabled
+    else:
+        config.pop("_disabled_mcpServers", None)
+
+    # Save
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=2)
+
+    console.print(f"[green]✓[/] Enabled '{name}'")
+    console.print("[yellow]Note:[/] Restart Claude Code to activate")
 
 
 @app.command("doctor", help="Diagnose config issues")

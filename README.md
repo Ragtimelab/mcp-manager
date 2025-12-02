@@ -5,6 +5,8 @@ Simple CLI tool for managing MCP (Model Context Protocol) servers.
 ## 목적
 
 - MCP 서버 목록 조회
+- MCP 서버 설치/제거
+- MCP 서버 활성화/비활성화 (토큰 절약)
 - MCP 서버 업데이트 (brew upgrade처럼)
 - MCP 서버 상태 확인
 - 설정 백업/복원
@@ -22,13 +24,51 @@ uv tool install .
 ### 서버 목록 조회
 
 ```bash
-# 기본
+# 기본 (활성화된 서버만)
 mcpm list
 mcpm ls  # 별칭
+
+# 비활성화된 서버 포함
+mcpm list -a
+mcpm list --all
 
 # 상세 정보 (env 포함)
 mcpm list -v
 mcpm list --verbose
+```
+
+### 서버 설치/제거
+
+```bash
+# uvx 서버 설치
+mcpm install mcp-server-time
+mcpm install mcp-server-fetch
+
+# npx 서버 설치
+mcpm install @upstash/context7-mcp
+mcpm install @modelcontextprotocol/server-sequential-thinking
+
+# 커스텀 이름으로 설치
+mcpm install mcp-server-time --name my-time
+
+# 서버 제거
+mcpm uninstall time
+mcpm uninstall context7
+
+# 확인 없이 제거
+mcpm uninstall time --force
+```
+
+### 서버 활성화/비활성화
+
+```bash
+# 서버 비활성화 (토큰 절약)
+mcpm disable sequential-thinking
+mcpm disable context7
+
+# 서버 활성화
+mcpm enable sequential-thinking
+mcpm enable context7
 ```
 
 ### 서버 업데이트
@@ -90,10 +130,15 @@ mcpm --help
 
 # 특정 명령어 도움말
 mcpm list --help
+mcpm install --help
+mcpm uninstall --help
+mcpm disable --help
+mcpm enable --help
 mcpm upgrade --help
 mcpm health --help
 mcpm show --help
 mcpm backup --help
+mcpm doctor --help
 ```
 
 ## 구현 원칙
