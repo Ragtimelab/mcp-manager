@@ -1,40 +1,46 @@
 # MCP Manager - Implementation Tasks
 
-## Phase 1: Core Infrastructure (Foundation)
+## Phase 1: Core Infrastructure (Foundation) ✅ COMPLETED
 
-### 1.1 Project Setup
-- [ ] Create `src/mcp_manager/__init__.py`
-- [ ] Add `__version__ = "0.1.0"`
-- [ ] Create `src/mcp_manager/py.typed` (for type checking)
+### 1.1 Project Setup ✅
+- [x] Create `src/mcp_manager/__init__.py`
+- [x] Add `__version__ = "0.1.0"`
+- [x] Create `src/mcp_manager/py.typed` (for type checking)
 
-### 1.2 Constants Module (`constants.py`)
-- [ ] Define `DEFAULT_CONFIG_PATH = Path.home() / ".claude.json"`
-- [ ] Define `PROJECT_CONFIG_PATH = Path.cwd() / ".mcp.json"`
-- [ ] Define `LOCAL_CONFIG_PATH = Path.cwd() / ".claude" / "settings.json"`
-- [ ] Define `DEFAULT_BACKUP_DIR = Path.home() / ".mcp-manager" / "backups"`
-- [ ] Define `ALLOWED_COMMANDS = {"uvx", "npx", "node", "python", "python3", "docker"}`
-- [ ] Define `DANGEROUS_ENV_VARS = {"PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"}`
-- [ ] Define `SERVER_NAME_PATTERN = r"^[a-z][a-z0-9_-]{0,63}$"`
-- [ ] Define timeout constants (health check, file lock)
+### 1.2 Constants Module (`constants.py`) ✅
+- [x] Define `DEFAULT_CONFIG_PATH = Path.home() / ".claude.json"`
+- [x] Define `PROJECT_CONFIG_PATH = Path.cwd() / ".mcp.json"`
+- [x] Define `LOCAL_CONFIG_PATH = Path.cwd() / ".claude" / "settings.json"`
+- [x] Define `DEFAULT_BACKUP_DIR = Path.home() / ".mcp-manager" / "backups"`
+- [x] Define `ALLOWED_COMMANDS = {"uvx", "npx", "node", "python", "python3", "docker"}`
+- [x] Define `DANGEROUS_ENV_VARS = {"PATH", "LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH"}`
+- [x] Define `SERVER_NAME_PATTERN = r"^[a-z][a-z0-9_-]{0,63}$"`
+- [x] Define timeout constants (health check, file lock)
 
-### 1.3 Exceptions Module (`exceptions.py`)
-- [ ] Define `MCPManagerError(Exception)` base class
-- [ ] Define `ConfigError(MCPManagerError)`
-  - [ ] `ConfigNotFoundError`
-  - [ ] `ConfigCorruptedError`
-  - [ ] `ConfigPermissionError`
-- [ ] Define `ValidationError(MCPManagerError)`
-  - [ ] `InvalidServerNameError`
-  - [ ] `InvalidServerTypeError`
-  - [ ] `InvalidCommandError`
-  - [ ] `InvalidURLError`
-  - [ ] `ServerAlreadyExistsError`
-- [ ] Define `BackupError(MCPManagerError)`
-  - [ ] `BackupNotFoundError`
-  - [ ] `BackupCorruptedError`
-- [ ] Define `FileIOError(MCPManagerError)`
-- [ ] Add `details: dict` field to all exceptions
-- [ ] Add proper `__str__` method
+### 1.3 Exceptions Module (`exceptions.py`) ✅
+- [x] Define `MCPManagerError(Exception)` base class
+- [x] Define `ConfigError(MCPManagerError)`
+  - [x] `ConfigNotFoundError`
+  - [x] `ConfigCorruptedError`
+  - [x] `ConfigPermissionError`
+- [x] Define `ValidationError(MCPManagerError)`
+  - [x] `InvalidServerNameError`
+  - [x] `InvalidServerTypeError`
+  - [x] `InvalidCommandError`
+  - [x] `InvalidURLError`
+  - [x] `ServerAlreadyExistsError`
+- [x] Define `BackupError(MCPManagerError)`
+  - [x] `BackupNotFoundError`
+  - [x] `BackupCorruptedError`
+- [x] Define `FileIOError(MCPManagerError)`
+- [x] Add `details: dict` field to all exceptions
+- [x] Add proper `__str__` method
+
+### 1.4 Testing ✅
+- [x] Create `tests/unit/test_constants.py` (19 tests)
+- [x] Create `tests/unit/test_exceptions.py` (29 tests)
+- [x] All 48 Phase 1 tests passing
+- [x] 100% coverage for constants.py and exceptions.py
 
 ---
 
