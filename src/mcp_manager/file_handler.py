@@ -1,9 +1,10 @@
 """Safe file I/O operations with atomic writes and locking."""
 
-import fcntl
 import os
 from pathlib import Path
-from typing import Optional
+from typing import IO, Optional
+
+import portalocker
 
 from mcp_manager.exceptions import FileIOError
 
@@ -43,7 +44,8 @@ def atomic_write(path: Path, content: str) -> None:
 class FileLock:
     """Context manager for file locking.
 
-    Uses fcntl.flock for advisory file locking to prevent concurrent modifications.
+    Uses portalocker for cross-platform advisory file locking to prevent concurrent
+    modifications. Works on Unix/Linux/macOS (fcntl) and Windows (msvcrt).
     """
 
     def __init__(self, path: Path, exclusive: bool = True):
@@ -54,24 +56,26 @@ class FileLock:
             exclusive: If True, acquire exclusive lock (write). If False, shared lock (read).
         """
         self.path = path
-        self.mode = fcntl.LOCK_EX if exclusive else fcntl.LOCK_SH
-        self.fd: Optional[int] = None
+        self.exclusive = exclusive
+        self.file_handle: Optional[IO[bytes]] = None
 
     def __enter__(self) -> int:
         """Acquire lock."""
-        # Open file
-        flags = os.O_RDWR if self.mode == fcntl.LOCK_EX else os.O_RDONLY
-        self.fd = os.open(self.path, flags)
+        # Open file for locking
+        mode = "r+b" if self.exclusive else "rb"
+        flags = portalocker.LOCK_EX if self.exclusive else portalocker.LOCK_SH
 
-        # Acquire lock
-        fcntl.flock(self.fd, self.mode)
-        return self.fd
+        # Open and lock in one step
+        self.file_handle = open(self.path, mode)
+        portalocker.lock(self.file_handle, flags)
+
+        return self.file_handle.fileno()
 
     def __exit__(self, *args: object) -> None:
         """Release lock."""
-        if self.fd is not None:
-            fcntl.flock(self.fd, fcntl.LOCK_UN)
-            os.close(self.fd)
+        if self.file_handle is not None:
+            portalocker.unlock(self.file_handle)
+            self.file_handle.close()
 
 
 def file_lock(path: Path, exclusive: bool = True) -> FileLock:
