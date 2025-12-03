@@ -54,7 +54,7 @@ def create_backup(config: dict) -> Path:
     return backup_file
 
 
-@app.command("list", help="List all MCP servers")
+@app.command("list", help="List all configured MCP servers")
 @app.command("ls", hidden=True)
 def list_servers(
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Show detailed info"),
@@ -100,7 +100,7 @@ def list_servers(
         console.print(f"\n[dim]{len(disabled)} disabled server(s). Use -a to show all.[/]")
 
 
-@app.command("upgrade", help="Upgrade MCP servers")
+@app.command("upgrade", help="Upgrade MCP server packages")
 @app.command("up", hidden=True)
 def upgrade_servers(name: Optional[str] = typer.Argument(None, help="Server name")):
     """Upgrade all or specific MCP server"""
@@ -144,7 +144,7 @@ def upgrade_servers(name: Optional[str] = typer.Argument(None, help="Server name
     console.print("[green]✅ Done![/]")
 
 
-@app.command("health", help="Check MCP server health")
+@app.command("health", help="Check health of MCP servers")
 def health_check(name: Optional[str] = typer.Argument(None, help="Server name")):
     """Check health of MCP servers"""
     config = load_config()
@@ -195,7 +195,7 @@ def health_check(name: Optional[str] = typer.Argument(None, help="Server name"))
             console.print(f"[red]✗[/] {sname}: ERROR ({e})")
 
 
-@app.command("show", help="Show MCP server details")
+@app.command("show", help="Show details for a specific server")
 def show_server(name: str = typer.Argument(..., help="Server name")):
     """Show detailed info for a server"""
     config = load_config()
@@ -213,12 +213,16 @@ def show_server(name: str = typer.Argument(..., help="Server name")):
     console.print(f"└─ Env: {server.get('env', {})}\n")
 
 
-@app.command("backup", help="Backup/restore config")
+@app.command("backup", help="Create and restore configuration backups")
 def backup_config(
     list_backups: bool = typer.Option(False, "-l", "--list", help="List backups"),
     restore: Optional[str] = typer.Option(
         None, "-r", "--restore", help="Restore backup"
     ),
+    delete: Optional[str] = typer.Option(None, "-d", "--delete", help="Delete backup"),
+    clean: bool = typer.Option(False, "--clean", help="Clean up old backups"),
+    keep: Optional[int] = typer.Option(None, "--keep", help="Keep N recent backups (use with --clean)"),
+    force: bool = typer.Option(False, "--force", help="Skip confirmation"),
 ):
     """Backup or restore ~/.claude.json"""
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
@@ -260,6 +264,84 @@ def backup_config(
         console.print("[green]✅ Restored successfully![/]")
         return
 
+    if delete:
+        backups = sorted(BACKUP_DIR.glob("*.json"), reverse=True)
+        if not backups:
+            console.print("[yellow]No backups found[/]")
+            return
+
+        # ID 또는 타임스탬프로 백업 찾기
+        target_file: Optional[Path] = None
+        if delete.isdigit():
+            # 숫자 ID로 찾기
+            idx = int(delete) - 1
+            if 0 <= idx < len(backups):
+                target_file = backups[idx]
+        else:
+            # 타임스탬프로 찾기
+            timestamp = delete if delete.endswith(".json") else f"{delete}.json"
+            temp_file = BACKUP_DIR / timestamp
+            if temp_file.exists():
+                target_file = temp_file
+
+        if not target_file:
+            console.print(f"[red]✗[/] Backup not found: {delete}")
+            raise typer.Exit(1)
+
+        # 확인
+        if not force:
+            console.print(f"[yellow]Delete backup '{target_file.name}'?[/]")
+            confirm = typer.confirm("Continue?")
+            if not confirm:
+                console.print("[yellow]Cancelled[/]")
+                raise typer.Exit(0)
+
+        target_file.unlink()
+        console.print(f"[green]✓[/] Deleted backup: {target_file.name}")
+        return
+
+    if clean:
+        backups = sorted(BACKUP_DIR.glob("*.json"), reverse=True)
+        if not backups:
+            console.print("[yellow]No backups found[/]")
+            return
+
+        # keep 옵션으로 유지할 백업 수 결정
+        if keep is not None:
+            to_delete = backups[keep:]
+            to_keep = backups[:keep]
+        else:
+            to_delete = backups
+            to_keep = []
+
+        if not to_delete:
+            console.print("[yellow]No backups to delete[/]")
+            return
+
+        # 확인
+        if not force:
+            console.print(f"[yellow]Delete {len(to_delete)} backup(s)?[/]")
+            if to_keep:
+                console.print(f"[dim]Keeping {len(to_keep)} most recent backup(s)[/]")
+            for backup in to_delete[:5]:  # 처음 5개만 미리보기
+                console.print(f"  - {backup.name}")
+            if len(to_delete) > 5:
+                console.print(f"  ... and {len(to_delete) - 5} more")
+
+            confirm = typer.confirm("Continue?")
+            if not confirm:
+                console.print("[yellow]Cancelled[/]")
+                raise typer.Exit(0)
+
+        # 삭제 실행
+        for backup in to_delete:
+            backup.unlink()
+
+        console.print(f"[green]✓[/] Deleted {len(to_delete)} backup(s)")
+        if to_keep:
+            console.print(f"[dim]Kept {len(to_keep)} most recent backup(s)[/]")
+        return
+
     # 백업 생성
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     backup_file = BACKUP_DIR / f"{timestamp}.json"
@@ -271,7 +353,7 @@ def backup_config(
     console.print(f"[green]✅ Backup created:[/] {backup_file}")
 
 
-@app.command("install", help="Install MCP server")
+@app.command("install", help="Install and configure an MCP server")
 def install_server(
     package: str = typer.Argument(..., help="Package name"),
     name: Optional[str] = typer.Option(None, "--name", help="Custom server name"),
@@ -313,7 +395,7 @@ def install_server(
     console.print("[yellow]Note:[/] Restart Claude Code to activate")
 
 
-@app.command("uninstall", help="Uninstall MCP server")
+@app.command("uninstall", help="Remove an MCP server from configuration")
 def uninstall_server(
     name: str = typer.Argument(..., help="Server name"),
     force: bool = typer.Option(False, "--force", help="Skip confirmation"),
@@ -350,7 +432,7 @@ def uninstall_server(
     console.print("[yellow]Note:[/] Restart Claude Code to apply changes")
 
 
-@app.command("disable", help="Disable MCP server")
+@app.command("disable", help="Temporarily disable an MCP server")
 def disable_server(name: str = typer.Argument(..., help="Server name")):
     """Disable MCP server (move to _disabled_mcpServers)"""
     config = load_config()
@@ -378,7 +460,7 @@ def disable_server(name: str = typer.Argument(..., help="Server name")):
     console.print("[yellow]Note:[/] Restart Claude Code to apply changes")
 
 
-@app.command("enable", help="Enable MCP server")
+@app.command("enable", help="Re-enable a disabled MCP server")
 def enable_server(name: str = typer.Argument(..., help="Server name")):
     """Enable MCP server (move from _disabled_mcpServers)"""
     config = load_config()
@@ -409,7 +491,7 @@ def enable_server(name: str = typer.Argument(..., help="Server name")):
     console.print("[yellow]Note:[/] Restart Claude Code to activate")
 
 
-@app.command("doctor", help="Diagnose config issues")
+@app.command("doctor", help="Diagnose configuration issues")
 def doctor():
     """Diagnose MCP configuration and suggest fixes"""
     console.print("[bold]Diagnosing MCP configuration...[/]\n")

@@ -113,6 +113,16 @@ mcpm backup --list
 # 백업 복원
 mcpm backup -r 20251202-143052
 mcpm backup --restore 20251202-143052
+
+# 백업 삭제
+mcpm backup -d 1                    # ID로 특정 백업 삭제
+mcpm backup -d 20251202-143052      # 타임스탬프로 삭제
+mcpm backup -d 1 --force            # 확인 없이 삭제
+
+# 백업 정리
+mcpm backup --clean                 # 전체 백업 삭제
+mcpm backup --clean --keep 5        # 최근 5개만 유지
+mcpm backup --clean --force         # 확인 없이 전체 삭제
 ```
 
 ### 설정 진단

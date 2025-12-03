@@ -75,9 +75,17 @@ mcpm
 ├── upgrade (alias: up)   # Upgrade all or specific server
 ├── health               # Check server executability
 ├── show                 # Display server config details
-├── backup               # Create/list/restore backups
+├── backup               # Create/list/restore/delete backups
 │   ├── -l, --list       # List backups
-│   └── -r, --restore    # Restore from backup
+│   ├── -r, --restore    # Restore from backup
+│   ├── -d, --delete     # Delete specific backup
+│   ├── --clean          # Clean up old backups
+│   ├── --keep N         # Keep N recent backups (use with --clean)
+│   └── --force          # Skip confirmation
+├── install              # Install and configure MCP server
+├── uninstall            # Remove MCP server from configuration
+├── disable              # Temporarily disable MCP server
+├── enable               # Re-enable disabled MCP server
 └── doctor               # Diagnose MCP configuration issues
 ```
 
@@ -123,10 +131,14 @@ When making changes, verify:
 3. `uv run python mcpm.py list` works (local test)
 4. `uv tool install --reinstall .` succeeds (rebuild from source)
 5. `mcpm --help` displays correctly (installed version)
-6. All 7 commands functional:
+6. All 10 commands functional:
    - `mcpm list` / `mcpm ls`
    - `mcpm upgrade` / `mcpm up`
    - `mcpm health`
    - `mcpm show <server>`
-   - `mcpm backup` / `mcpm backup -l` / `mcpm backup -r <id>`
+   - `mcpm backup` / `mcpm backup -l` / `mcpm backup -r <id>` / `mcpm backup -d <id>` / `mcpm backup --clean`
+   - `mcpm install <package>`
+   - `mcpm uninstall <server>`
+   - `mcpm disable <server>`
+   - `mcpm enable <server>`
    - `mcpm doctor` (diagnostics)
