@@ -10,12 +10,16 @@ from typing import Optional
 
 import typer
 from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
+from rich.tree import Tree
 
 app = typer.Typer(
     name="mcpm",
     help="Simple CLI for managing MCP servers",
     add_completion=False,
+    rich_markup_mode="rich",
 )
 console = Console()
 
@@ -54,7 +58,7 @@ def create_backup(config: dict) -> Path:
     return backup_file
 
 
-@app.command("list", help="List all configured MCP servers")
+@app.command("list", help="List all configured MCP servers [dim]\\[ls][/dim]")
 @app.command("ls", hidden=True)
 def list_servers(
     verbose: bool = typer.Option(False, "-v", "--verbose", help="Show detailed info"),
@@ -100,7 +104,7 @@ def list_servers(
         console.print(f"\n[dim]{len(disabled)} disabled server(s). Use -a to show all.[/]")
 
 
-@app.command("upgrade", help="Upgrade MCP server packages")
+@app.command("upgrade", help="Upgrade MCP server packages [dim]\\[up][/dim]")
 @app.command("up", hidden=True)
 def upgrade_servers(name: Optional[str] = typer.Argument(None, help="Server name")):
     """Upgrade all or specific MCP server"""
@@ -114,34 +118,64 @@ def upgrade_servers(name: Optional[str] = typer.Argument(None, help="Server name
             raise typer.Exit(1)
         servers = {name: servers[name]}
 
-    console.print("🔄 Upgrading MCP servers...")
+    results: list[tuple[str, bool, str]] = []  # (name, success, message)
 
-    for sname, server in servers.items():
-        cmd = server["command"]
-        args = server["args"]
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Upgrading MCP servers...", total=len(servers))
 
-        try:
-            if cmd == "uvx":
-                # uvx --refresh <package>
-                subprocess.run(
-                    ["uvx", "--refresh", *args, "--help"],
-                    capture_output=True,
-                    check=True,
-                    timeout=30,
-                )
-            elif cmd == "npx":
-                # npm cache clean (latest version will be downloaded on next use)
-                subprocess.run(
-                    ["npm", "cache", "clean", "--force"],
-                    capture_output=True,
-                    timeout=30,
-                )
+        for sname, server in servers.items():
+            progress.update(task, description=f"Upgrading {sname}...")
+            cmd = server["command"]
+            args = server["args"]
 
-            console.print(f"[green]✓[/] {sname}")
-        except Exception as e:
-            console.print(f"[red]✗[/] {sname}: {e}")
+            try:
+                if cmd == "uvx":
+                    subprocess.run(
+                        ["uvx", "--refresh", *args, "--help"],
+                        capture_output=True,
+                        check=True,
+                        timeout=30,
+                    )
+                    results.append((sname, True, "refreshed"))
+                elif cmd == "npx":
+                    subprocess.run(
+                        ["npm", "cache", "clean", "--force"],
+                        capture_output=True,
+                        timeout=30,
+                    )
+                    results.append((sname, True, "cache cleared"))
+                else:
+                    results.append((sname, True, "skipped (unknown type)"))
+            except subprocess.TimeoutExpired:
+                results.append((sname, False, "timeout"))
+            except subprocess.CalledProcessError as e:
+                results.append((sname, False, f"exit code {e.returncode}"))
+            except Exception as e:
+                results.append((sname, False, str(e)))
 
-    console.print("[green]✅ Done![/]")
+            progress.advance(task)
+
+    # 결과 테이블
+    table = Table(title="Upgrade Results", show_header=True)
+    table.add_column("Server", style="cyan")
+    table.add_column("Status", style="white")
+    table.add_column("Details", style="dim")
+
+    success_count = 0
+    for sname, success, msg in results:
+        if success:
+            table.add_row(sname, "[green]✓[/] OK", msg)
+            success_count += 1
+        else:
+            table.add_row(sname, "[red]✗[/] FAILED", msg)
+
+    console.print(table)
+    console.print(f"\n[green]✓[/] {success_count}/{len(results)} upgraded successfully")
 
 
 @app.command("health", help="Check health of MCP servers")
@@ -156,43 +190,71 @@ def health_check(name: Optional[str] = typer.Argument(None, help="Server name"))
             raise typer.Exit(1)
         servers = {name: servers[name]}
 
-    console.print("Checking MCP servers...")
+    results: list[tuple[str, str, str, str]] = []  # (name, type, status, details)
 
-    for sname, server in servers.items():
-        cmd = server["command"]
-        args = server["args"]
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        task = progress.add_task("Checking MCP servers...", total=len(servers))
 
-        try:
-            if cmd == "uvx":
-                # uvx uses cache, safe to execute
-                result = subprocess.run(
-                    [cmd, *args, "--help"], capture_output=True, timeout=30
-                )
-                if result.returncode == 0:
-                    console.print(f"[green]✓[/] {sname}: OK")
-                else:
-                    console.print(
-                        f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})"
+        for sname, server in servers.items():
+            progress.update(task, description=f"Checking {sname}...")
+            cmd = server["command"]
+            args = server["args"]
+
+            try:
+                if cmd == "uvx":
+                    result = subprocess.run(
+                        [cmd, *args, "--help"], capture_output=True, timeout=30
                     )
-            elif cmd == "npx":
-                # npx may download packages, only check command availability
-                if shutil.which(cmd):
-                    console.print(f"[green]✓[/] {sname}: OK (npx available)")
+                    if result.returncode == 0:
+                        results.append((sname, "uvx", "ok", "executable"))
+                    else:
+                        results.append(
+                            (sname, "uvx", "error", f"exit code {result.returncode}")
+                        )
+                elif cmd == "npx":
+                    if shutil.which(cmd):
+                        results.append((sname, "npx", "ok", "npx available"))
+                    else:
+                        results.append((sname, "npx", "error", "npx not in PATH"))
                 else:
-                    console.print(f"[red]✗[/] {sname}: npx not found in PATH")
-            else:
-                # Other commands: try to execute
-                result = subprocess.run(
-                    [cmd, *args, "--help"], capture_output=True, timeout=30
-                )
-                if result.returncode == 0:
-                    console.print(f"[green]✓[/] {sname}: OK")
-                else:
-                    console.print(
-                        f"[red]✗[/] {sname}: ERROR (exit code {result.returncode})"
+                    result = subprocess.run(
+                        [cmd, *args, "--help"], capture_output=True, timeout=30
                     )
-        except Exception as e:
-            console.print(f"[red]✗[/] {sname}: ERROR ({e})")
+                    if result.returncode == 0:
+                        results.append((sname, cmd, "ok", "executable"))
+                    else:
+                        results.append(
+                            (sname, cmd, "error", f"exit code {result.returncode}")
+                        )
+            except subprocess.TimeoutExpired:
+                results.append((sname, cmd, "error", "timeout"))
+            except Exception as e:
+                results.append((sname, cmd, "error", str(e)))
+
+            progress.advance(task)
+
+    # 결과 테이블
+    table = Table(title="Health Check Results", show_header=True)
+    table.add_column("Server", style="cyan")
+    table.add_column("Type", style="magenta")
+    table.add_column("Status", style="white")
+    table.add_column("Details", style="dim")
+
+    healthy = 0
+    for sname, stype, status, details in results:
+        if status == "ok":
+            table.add_row(sname, stype, "[green]● Healthy[/]", details)
+            healthy += 1
+        else:
+            table.add_row(sname, stype, "[red]● Unhealthy[/]", details)
+
+    console.print(table)
+    console.print(f"\n[green]✓[/] {healthy}/{len(results)} servers healthy")
 
 
 @app.command("show", help="Show details for a specific server")
@@ -200,17 +262,41 @@ def show_server(name: str = typer.Argument(..., help="Server name")):
     """Show detailed info for a server"""
     config = load_config()
     servers = get_servers(config)
+    disabled = config.get("_disabled_mcpServers", {})
 
-    if name not in servers:
+    # 활성 서버 또는 비활성 서버에서 찾기
+    if name in servers:
+        server = servers[name]
+        status = "[green]● active[/]"
+    elif name in disabled:
+        server = disabled[name]
+        status = "[dim]○ disabled[/]"
+    else:
         console.print(f"[red]✗[/] Server '{name}' not found")
         raise typer.Exit(1)
 
-    server = servers[name]
-    console.print(f"\n[cyan]Server: {name}[/]")
-    console.print(f"├─ Type: {server['type']}")
-    console.print(f"├─ Command: {server['command']}")
-    console.print(f"├─ Args: {server['args']}")
-    console.print(f"└─ Env: {server.get('env', {})}\n")
+    # Rich Tree로 표시
+    tree = Tree(f"[bold cyan]{name}[/] {status}")
+    tree.add(f"[white]Type:[/] [yellow]{server['type']}[/]")
+    tree.add(f"[white]Command:[/] [green]{server['command']}[/]")
+
+    args_branch = tree.add("[white]Args:[/]")
+    for arg in server.get("args", []):
+        args_branch.add(f"[dim]{arg}[/]")
+
+    env = server.get("env", {})
+    if env:
+        env_branch = tree.add("[white]Env:[/]")
+        for key, val in env.items():
+            # 민감한 값 마스킹
+            display_val = val if len(val) < 20 else f"{val[:8]}...{val[-4:]}"
+            env_branch.add(f"[blue]{key}[/]=[dim]{display_val}[/]")
+    else:
+        tree.add("[white]Env:[/] [dim](none)[/]")
+
+    console.print()
+    console.print(tree)
+    console.print()
 
 
 @app.command("backup", help="Create and restore configuration backups")
@@ -233,17 +319,24 @@ def backup_config(
             console.print("[yellow]No backups found[/]")
             return
 
-        console.print("[cyan]Available backups:[/]")
+        table = Table(title="Backups", show_header=True)
+        table.add_column("ID", style="cyan", justify="right")
+        table.add_column("Filename", style="white")
+        table.add_column("Created", style="green")
+        table.add_column("Size", style="dim", justify="right")
+
         for i, backup in enumerate(backups, 1):
-            # 파일명에서 날짜 파싱 (YYYYMMDD-HHMMSS)
             timestamp = backup.stem
+            size = backup.stat().st_size
+            size_str = f"{size:,} B" if size < 1024 else f"{size / 1024:.1f} KB"
             try:
                 dt = datetime.strptime(timestamp, "%Y%m%d-%H%M%S")
-                console.print(
-                    f"  {i}. {timestamp}.json ({dt.strftime('%Y-%m-%d %H:%M:%S')})"
-                )
+                table.add_row(str(i), backup.name, dt.strftime("%Y-%m-%d %H:%M:%S"), size_str)
             except ValueError:
-                console.print(f"  {i}. {backup.name}")
+                table.add_row(str(i), backup.name, "-", size_str)
+
+        console.print(table)
+        console.print("\n[dim]Use 'mcpm backup -r <ID>' to restore[/]")
         return
 
     if restore:
@@ -494,112 +587,179 @@ def enable_server(name: str = typer.Argument(..., help="Server name")):
 @app.command("doctor", help="Diagnose configuration issues")
 def doctor():
     """Diagnose MCP configuration and suggest fixes"""
-    console.print("[bold]Diagnosing MCP configuration...[/]\n")
+    console.print(Panel("[bold]MCP Configuration Diagnostics[/]", style="cyan"))
 
     errors = 0
     warnings = 0
+    config_checks: list[tuple[str, str, str]] = []  # (check, status, details)
 
     # Check 1: Config file exists
     if not CONFIG_PATH.exists():
-        console.print("[red]✗[/] ~/.claude.json not found")
+        config_checks.append(("Config file", "error", "~/.claude.json not found"))
         errors += 1
-        console.print("\n[yellow]Suggestions:[/]")
-        console.print("1. Run Claude Code to create the config file")
-        console.print("2. Or create manually: touch ~/.claude.json")
+        _print_doctor_results(config_checks, [], [], errors, warnings)
+        console.print(Panel(
+            "[yellow]Suggestions:[/]\n"
+            "1. Run Claude Code to create the config file\n"
+            "2. Or create manually: touch ~/.claude.json",
+            title="How to fix",
+            style="yellow",
+        ))
         raise typer.Exit(1)
 
-    console.print("[green]✓[/] ~/.claude.json exists")
+    config_checks.append(("Config file", "ok", "~/.claude.json exists"))
 
     # Check 2: Valid JSON
     try:
         with open(CONFIG_PATH) as f:
             config = json.load(f)
-        console.print("[green]✓[/] Valid JSON syntax")
+        config_checks.append(("JSON syntax", "ok", "Valid JSON"))
     except json.JSONDecodeError as e:
-        console.print(f"[red]✗[/] Invalid JSON: {e}")
+        config_checks.append(("JSON syntax", "error", f"Invalid: line {e.lineno}"))
         errors += 1
-        console.print("\n[yellow]Suggestions:[/]")
-        console.print(f"1. Fix JSON syntax error at line {e.lineno}")
-        console.print("2. Restore from backup: mcpm backup -l")
+        _print_doctor_results(config_checks, [], [], errors, warnings)
+        console.print(Panel(
+            f"[yellow]Suggestions:[/]\n"
+            f"1. Fix JSON syntax error at line {e.lineno}\n"
+            f"2. Restore from backup: mcpm backup -l",
+            title="How to fix",
+            style="yellow",
+        ))
         raise typer.Exit(1)
 
     # Check 3: mcpServers field exists
     servers = config.get("mcpServers", {})
     if not servers:
-        console.print("[yellow]⚠[/] No MCP servers configured")
+        config_checks.append(("mcpServers", "warning", "No servers configured"))
         warnings += 1
     else:
-        console.print(f"[green]✓[/] mcpServers field found ({len(servers)} servers)\n")
+        config_checks.append(("mcpServers", "ok", f"{len(servers)} server(s) found"))
 
     # Check 4: Validate each server
-    if servers:
-        console.print("[bold]Checking servers:[/]")
-        for name, server in servers.items():
-            server_errors = []
-            server_warnings = []
+    server_results: list[tuple[str, str, str]] = []
+    for name, server in servers.items():
+        server_errors = []
+        server_warnings = []
 
-            # Check required fields
-            if "type" not in server:
-                server_errors.append("missing 'type' field")
-            elif server["type"] not in ["stdio", "sse", "http"]:
-                server_errors.append(f"invalid type '{server['type']}'")
+        if "type" not in server:
+            server_errors.append("missing 'type'")
+        elif server["type"] not in ["stdio", "sse", "http"]:
+            server_errors.append("invalid type")
 
-            if server.get("type") == "stdio":
-                if "command" not in server:
-                    server_errors.append("missing 'command' field")
-                if "args" not in server:
-                    server_warnings.append("missing 'args' field (using [])")
+        if server.get("type") == "stdio":
+            if "command" not in server:
+                server_errors.append("missing 'command'")
+            if "args" not in server:
+                server_warnings.append("no 'args'")
 
-            # Check command availability
-            cmd = server.get("command")
-            if cmd:
-                if not shutil.which(cmd):
-                    server_errors.append(f"command '{cmd}' not found in PATH")
+        cmd = server.get("command")
+        if cmd and not shutil.which(cmd):
+            server_errors.append(f"'{cmd}' not in PATH")
 
-            # Check args length
-            args = server.get("args", [])
-            if len(args) > 10:
-                server_warnings.append(f"large args array ({len(args)} items)")
-
-            # Print results
-            if server_errors:
-                console.print(f"[red]✗[/] {name}: {', '.join(server_errors)}")
-                errors += len(server_errors)
-            elif server_warnings:
-                console.print(f"[yellow]⚠[/] {name}: {', '.join(server_warnings)}")
-                warnings += len(server_warnings)
-            else:
-                console.print(f"[green]✓[/] {name}: Valid configuration")
-
-    # Check 5: Required commands availability
-    console.print("\n[bold]Checking system commands:[/]")
-    required_commands = {"uvx": "uv", "npx": "node/npm"}
-
-    for cmd, pkg in required_commands.items():
-        if shutil.which(cmd):
-            console.print(f"[green]✓[/] {cmd} available")
+        if server_errors:
+            server_results.append((name, "error", ", ".join(server_errors)))
+            errors += len(server_errors)
+        elif server_warnings:
+            server_results.append((name, "warning", ", ".join(server_warnings)))
+            warnings += len(server_warnings)
         else:
-            console.print(f"[yellow]⚠[/] {cmd} not found (needed for {pkg} servers)")
+            server_results.append((name, "ok", "Valid"))
+
+    # Check 5: Required commands
+    cmd_results: list[tuple[str, str, str]] = []
+    required_commands = {"uvx": "Python MCP servers", "npx": "Node.js MCP servers"}
+
+    for cmd, desc in required_commands.items():
+        if shutil.which(cmd):
+            cmd_results.append((cmd, "ok", desc))
+        else:
+            cmd_results.append((cmd, "warning", f"Not found ({desc})"))
             warnings += 1
 
-    # Summary
-    console.print("\n[bold]Summary:[/]")
-    if errors == 0 and warnings == 0:
-        console.print(
-            "[green]✅ No issues found! Your MCP configuration is healthy.[/]"
-        )
-    else:
-        console.print(
-            f"Issues found: [red]{errors} error(s)[/], [yellow]{warnings} warning(s)[/]"
-        )
-
-        if errors > 0:
-            console.print("\n[yellow]Suggestions:[/]")
-            console.print("1. Fix errors above to ensure MCP servers work correctly")
-            console.print("2. Run 'mcpm list' to verify server configuration")
-            console.print("3. Run 'mcpm health' to test server executability")
+    # Print all results
+    _print_doctor_results(config_checks, server_results, cmd_results, errors, warnings)
 
     raise typer.Exit(0 if errors == 0 else 1)
+
+
+def _print_doctor_results(
+    config_checks: list[tuple[str, str, str]],
+    server_results: list[tuple[str, str, str]],
+    cmd_results: list[tuple[str, str, str]],
+    errors: int,
+    warnings: int,
+) -> None:
+    """Print doctor diagnostic results in tables"""
+    # Config checks table
+    if config_checks:
+        table = Table(title="Configuration", show_header=True, title_style="bold")
+        table.add_column("Check", style="cyan")
+        table.add_column("Status")
+        table.add_column("Details", style="dim")
+
+        for check, status, details in config_checks:
+            status_str = {
+                "ok": "[green]● OK[/]",
+                "warning": "[yellow]● Warning[/]",
+                "error": "[red]● Error[/]",
+            }.get(status, status)
+            table.add_row(check, status_str, details)
+
+        console.print(table)
+        console.print()
+
+    # Server checks table
+    if server_results:
+        table = Table(title="Servers", show_header=True, title_style="bold")
+        table.add_column("Server", style="cyan")
+        table.add_column("Status")
+        table.add_column("Details", style="dim")
+
+        for name, status, details in server_results:
+            status_str = {
+                "ok": "[green]● Valid[/]",
+                "warning": "[yellow]● Warning[/]",
+                "error": "[red]● Invalid[/]",
+            }.get(status, status)
+            table.add_row(name, status_str, details)
+
+        console.print(table)
+        console.print()
+
+    # System commands table
+    if cmd_results:
+        table = Table(title="System Commands", show_header=True, title_style="bold")
+        table.add_column("Command", style="cyan")
+        table.add_column("Status")
+        table.add_column("Used for", style="dim")
+
+        for cmd, status, desc in cmd_results:
+            status_str = {
+                "ok": "[green]● Available[/]",
+                "warning": "[yellow]● Missing[/]",
+            }.get(status, status)
+            table.add_row(cmd, status_str, desc)
+
+        console.print(table)
+        console.print()
+
+    # Summary panel
+    if errors == 0 and warnings == 0:
+        console.print(Panel(
+            "[green]No issues found! Your MCP configuration is healthy.[/]",
+            title="Summary",
+            style="green",
+        ))
+    else:
+        summary_lines = [f"[red]{errors} error(s)[/], [yellow]{warnings} warning(s)[/]"]
+        if errors > 0:
+            summary_lines.append("")
+            summary_lines.append("[dim]Run 'mcpm health' to test server executability[/]")
+        console.print(Panel(
+            "\n".join(summary_lines),
+            title="Summary",
+            style="red" if errors > 0 else "yellow",
+        ))
 
 
 if __name__ == "__main__":
